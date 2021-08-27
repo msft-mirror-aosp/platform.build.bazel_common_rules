@@ -55,12 +55,12 @@ def files_to_dist():
             files_to_dist += [line.strip() for line in f]
     return files_to_dist
 
-def copy_files_to_dist_dir(files, dist_dir):
+def copy_files_to_dist_dir(files, dist_dir, flat):
     for src in files:
         if not os.path.isfile(src):
             continue
 
-        src_relpath = src
+        src_relpath = os.path.basename(src) if flat else src
         src_abspath = os.path.abspath(src)
 
         dst = os.path.join(dist_dir, src_relpath)
@@ -74,15 +74,16 @@ def copy_files_to_dist_dir(files, dist_dir):
 def main():
     parser = argparse.ArgumentParser(description="Dist Bazel output files into a custom directory.")
     parser.add_argument("--dist_dir", required = True, help = "absolute path to the dist dir")
+    parser.add_argument("--flat", action="store_true", help = "ignore subdirectories in the manifest")
     args = parser.parse_args()
-    dist_dir = args.dist_dir
 
-    if not os.path.isabs(dist_dir):
+    if not os.path.isabs(args.dist_dir):
         # BUILD_WORKSPACE_DIRECTORY is the root of the Bazel workspace containing this binary target.
         # https://docs.bazel.build/versions/main/user-manual.html#run
-        dist_dir = os.path.join(os.environ.get("BUILD_WORKSPACE_DIRECTORY"), dist_dir)
+        args.dist_dir = os.path.join(os.environ.get("BUILD_WORKSPACE_DIRECTORY"),
+                                     args.dist_dir)
 
-    copy_files_to_dist_dir(files_to_dist(), dist_dir)
+    copy_files_to_dist_dir(files_to_dist(), **vars(args))
 
 if __name__ == "__main__":
     main()
