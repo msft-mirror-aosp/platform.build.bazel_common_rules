@@ -9,9 +9,8 @@ def _generate_dist_manifest_impl(ctx):
     dist_manifest_content = ""
     all_dist_files = []
     for f in ctx.attr.data:
-        dist_files = f[DefaultInfo].files.to_list()
-        all_dist_files += dist_files
-        dist_manifest_content += "\n".join([dist_file.short_path for dist_file in dist_files])
+        all_dist_files += f[DefaultInfo].files.to_list()
+    dist_manifest_content += "\n".join([dist_file.short_path for dist_file in all_dist_files])
     ctx.actions.write(
         output = dist_manifest,
         content = dist_manifest_content,
@@ -21,7 +20,6 @@ def _generate_dist_manifest_impl(ctx):
     runfiles = ctx.runfiles(files = [dist_manifest] + all_dist_files)
 
     return [DefaultInfo(runfiles = runfiles)]
-
 
 _generate_dist_manifest = rule(
     implementation = _generate_dist_manifest_impl,
