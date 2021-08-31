@@ -55,12 +55,13 @@ def files_to_dist():
             files_to_dist += [line.strip() for line in f]
     return files_to_dist
 
-def copy_files_to_dist_dir(files, dist_dir, flat):
+def copy_files_to_dist_dir(files, dist_dir, flat, prefix):
     for src in files:
         if not os.path.isfile(src):
             continue
 
         src_relpath = os.path.basename(src) if flat else src
+        src_relpath = os.path.join(prefix, src_relpath)
         src_abspath = os.path.abspath(src)
 
         dst = os.path.join(dist_dir, src_relpath)
@@ -75,6 +76,7 @@ def main():
     parser = argparse.ArgumentParser(description="Dist Bazel output files into a custom directory.")
     parser.add_argument("--dist_dir", required = True, help = "absolute path to the dist dir")
     parser.add_argument("--flat", action="store_true", help = "ignore subdirectories in the manifest")
+    parser.add_argument("--prefix", default = "", help = "path prefix to apply within dist_dir")
     args = parser.parse_args()
 
     if not os.path.isabs(args.dist_dir):
