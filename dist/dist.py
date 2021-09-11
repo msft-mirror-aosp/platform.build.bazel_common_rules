@@ -35,14 +35,14 @@ import argparse
 import glob
 import os
 import shutil
-import sys
+import tarfile
 
 
-def files_to_dist():
+def files_to_dist(pattern):
     # Assume that dist.bzl is in the same package as dist.py
     runfiles_directory = os.path.dirname(__file__)
     dist_manifests = glob.glob(
-        os.path.join(runfiles_directory, "*_dist_manifest.txt"))
+        os.path.join(runfiles_directory, pattern))
     if not dist_manifests:
         print("Warning: could not find a file ending in *_dist_manifest.txt" +
               "in the runfiles directory: %s" % runfiles_directory)
@@ -53,7 +53,9 @@ def files_to_dist():
     return files_to_dist
 
 
-def copy_files_to_dist_dir(files, dist_dir, flat, prefix):
+def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
+    archive_prefix):
+
     for src in files:
         if not os.path.isfile(src):
             continue
@@ -70,6 +72,22 @@ def copy_files_to_dist_dir(files, dist_dir, flat, prefix):
 
         shutil.copyfile(src_abspath, dst, follow_symlinks=True)
 
+    for archive in archives:
+        try:
+            with tarfile.open(archive) as tf:
+                dst_dirname = os.path.join(dist_dir, archive_prefix)
+                print("[dist] Extracting archive: {} -> {}".format(archive,
+                                                                   dst_dirname))
+                tf.extractall(dst_dirname)
+        except tarfile.TarError:
+            # toybox does not support creating empty tar files, hence the build
+            # system may use empty files as empty archives.
+            if os.path.getsize(archive) == 0:
+                print("Warning: skipping empty tar file: {}".format(archive))
+                continue
+             # re-raise if we do not know anything about this error
+            raise
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -81,7 +99,12 @@ def main():
         action="store_true",
         help="ignore subdirectories in the manifest")
     parser.add_argument(
-        "--prefix", default="", help="path prefix to apply within dist_dir")
+        "--prefix", default="",
+        help="path prefix to apply within dist_dir for copied files")
+    parser.add_argument(
+        "--archive_prefix", default="",
+        help="Path prefix to apply within dist_dir for extracted archives. " +
+             "Supported archives: tar.")
     args = parser.parse_args()
 
     if not os.path.isabs(args.dist_dir):
@@ -91,7 +114,9 @@ def main():
         args.dist_dir = os.path.join(
             os.environ.get("BUILD_WORKSPACE_DIRECTORY"), args.dist_dir)
 
-    copy_files_to_dist_dir(files_to_dist(), **vars(args))
+    files = files_to_dist("*_dist_manifest.txt")
+    archives = files_to_dist("*_dist_archives_manifest.txt")
+    copy_files_to_dist_dir(files, archives, **vars(args))
 
 
 if __name__ == "__main__":
