@@ -3,21 +3,34 @@
 
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 
+def _label_list_to_manifest(lst):
+    """Convert the outputs of a label list to manifest content."""
+    all_dist_files = []
+    for f in lst:
+        all_dist_files += f[DefaultInfo].files.to_list()
+    return all_dist_files, "\n".join([dist_file.short_path for dist_file in all_dist_files])
+
 def _generate_dist_manifest_impl(ctx):
     # Create a manifest of dist files to differentiate them from other runfiles.
     dist_manifest = ctx.actions.declare_file(ctx.attr.name + "_dist_manifest.txt")
-    dist_manifest_content = ""
-    all_dist_files = []
-    for f in ctx.attr.data:
-        all_dist_files += f[DefaultInfo].files.to_list()
-    dist_manifest_content += "\n".join([dist_file.short_path for dist_file in all_dist_files])
+    all_dist_files, dist_manifest_content = _label_list_to_manifest(ctx.attr.data)
     ctx.actions.write(
         output = dist_manifest,
         content = dist_manifest_content,
     )
 
+    dist_archives_manifest = ctx.actions.declare_file(ctx.attr.name + "_dist_archives_manifest.txt")
+    all_dist_archives, dist_archives_manifest_content = _label_list_to_manifest(ctx.attr.archives)
+    ctx.actions.write(
+        output = dist_archives_manifest,
+        content = dist_archives_manifest_content,
+    )
+
     # Create the runfiles object.
-    runfiles = ctx.runfiles(files = [dist_manifest] + all_dist_files)
+    runfiles = ctx.runfiles(files = all_dist_files + all_dist_archives + [
+        dist_manifest,
+        dist_archives_manifest,
+    ])
 
     return [DefaultInfo(runfiles = runfiles)]
 
@@ -33,18 +46,35 @@ _generate_dist_manifest = rule(
 In the case of targets, the rule copies the list of `files` from the target's DefaultInfo provider.
 """,
         ),
+        "archives": attr.label_list(
+            mandatory = True,
+            allow_files = [".tar.gz", ".tar"],
+            doc = """Files or targets to be extracted to the dist dir.
+
+In the case of targets, the rule copies the list of `files` from the target's DefaultInfo provider.
+""",
+        ),
     },
 )
 
-def copy_to_dist_dir(name, data):
+def copy_to_dist_dir(name, data = [], archives = []):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
 
-Example:
+    Example:
+    ```
     bazel run //path/to/my:dist_target -- --dist_dir=/tmp/dist
-"""
+    ```
+
+    Args:
+        name: name of this rule
+        data: A list of labels, whose outputs are copied to `--dist_dir`.
+        archives: A list of labels, whose outputs are treated as tarballs and
+          extracted to `--dist_dir`.
+    """
     _generate_dist_manifest(
         name = name + "_dist_manifest",
         data = data,
+        archives = archives,
     )
 
     copy_file(
