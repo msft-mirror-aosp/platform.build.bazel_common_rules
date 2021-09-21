@@ -104,8 +104,8 @@ def docs(
             $(location //build/bazel_common_rules/docs:insert_resource.py) \
               --infile $(location //build/bazel_common_rules/docs:index.html) \
               --outfile $(location {name}/root/index.html) \
-              --resources $(location :{name}_default_file.html.frag) \
-                          $(locations :{name}_markdown_files)
+              $(location :{name}_default_file.html.frag) \
+              $(locations :{name}_markdown_files)
         """.format(name = name),
         tools = [
             "//build/bazel_common_rules/docs:insert_resource.py",
