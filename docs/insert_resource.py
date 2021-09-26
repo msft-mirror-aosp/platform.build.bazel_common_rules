@@ -35,6 +35,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("--infile", required=True, type=argparse.FileType('r'), help="input file")
     parser.add_argument("--outfile", required=True, type=argparse.FileType('w'), help="output file")
-    parser.add_argument("--resources", nargs='+', help="resource files")
+    parser.add_argument("resources", nargs='+', help="resource files")
     args = parser.parse_args()
     main(**vars(args))
