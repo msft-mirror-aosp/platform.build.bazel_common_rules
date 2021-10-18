@@ -51,7 +51,7 @@
                 var clone = sampleTocItem.cloneNode(true)
                 var link = clone.getElementsByTagName("a")[0];
                 link.href = "#" + h2Elements[i].id
-                link.innerText = h2Elements[i].id
+                link.innerText = h2Elements[i].innerText
                 toc.appendChild(clone)
             }
             toc.appendChild(document.getElementById("div-sample-toc-break").cloneNode(true))
