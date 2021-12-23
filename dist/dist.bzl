@@ -26,10 +26,17 @@ def _generate_dist_manifest_impl(ctx):
         content = dist_archives_manifest_content,
     )
 
+    default_args_manifest = ctx.actions.declare_file(ctx.attr.name + "_default_args.txt")
+    ctx.actions.write(
+        output = default_args_manifest,
+        content = "\n".join(ctx.attr.default_args),
+    )
+
     # Create the runfiles object.
     runfiles = ctx.runfiles(files = all_dist_files + all_dist_archives + [
         dist_manifest,
         dist_archives_manifest,
+        default_args_manifest,
     ])
 
     return [DefaultInfo(runfiles = runfiles)]
@@ -52,13 +59,19 @@ In the case of targets, the rule copies the list of `files` from the target's De
 In the case of targets, the rule copies the list of `files` from the target's DefaultInfo provider.
 """,
         ),
+        "default_args": attr.string_list(
+            doc = "Default arguments provided to the script.",
+        ),
     },
 )
 
 def copy_to_dist_dir(
         name,
         data = None,
-        archives = None):
+        archives = None,
+        flat = None,
+        prefix = None,
+        archive_prefix = None):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
 
     Example:
@@ -71,11 +84,27 @@ def copy_to_dist_dir(
         data: A list of labels, whose outputs are copied to `--dist_dir`.
         archives: A list of labels, whose outputs are treated as tarballs and
           extracted to `--dist_dir`.
+        flat: If true, `--flat` is provided to the script by default. Flatten the distribution
+          directory.
+        prefix: If specified, `--prefix <prefix>` is provided to the script by default. Path prefix
+          to apply within dist_dir for copied files.
+        archive_prefix: If specified, `--archive_prefix <prefix>` is provided to the script by
+          default. Path prefix to apply within dist_dir for extracted archives.
     """
+
+    default_args = []
+    if flat:
+        default_args.append("--flat")
+    if prefix != None:
+        default_args += ["--prefix", prefix]
+    if archive_prefix != None:
+        default_args += ["--archive_prefix", archive_prefix]
+
     _generate_dist_manifest(
         name = name + "_dist_manifest",
         data = data,
         archives = archives,
+        default_args = default_args,
     )
 
     copy_file(
