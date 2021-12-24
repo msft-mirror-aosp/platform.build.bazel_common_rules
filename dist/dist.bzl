@@ -39,7 +39,6 @@ _generate_dist_manifest = rule(
     doc = """Generate a manifest of files to be dist to a directory.""",
     attrs = {
         "data": attr.label_list(
-            mandatory = True,
             allow_files = True,
             doc = """Files or targets to copy to the dist dir.
 
@@ -47,7 +46,6 @@ In the case of targets, the rule copies the list of `files` from the target's De
 """,
         ),
         "archives": attr.label_list(
-            mandatory = True,
             allow_files = [".tar.gz", ".tar"],
             doc = """Files or targets to be extracted to the dist dir.
 
@@ -57,7 +55,10 @@ In the case of targets, the rule copies the list of `files` from the target's De
     },
 )
 
-def copy_to_dist_dir(name, data = [], archives = []):
+def copy_to_dist_dir(
+        name,
+        data = None,
+        archives = None):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
 
     Example:
