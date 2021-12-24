@@ -35,6 +35,7 @@ import argparse
 import glob
 import os
 import shutil
+import sys
 import tarfile
 
 
@@ -44,8 +45,8 @@ def files_to_dist(pattern):
     dist_manifests = glob.glob(
         os.path.join(runfiles_directory, pattern))
     if not dist_manifests:
-        print("Warning: could not find a file ending in *_dist_manifest.txt" +
-              "in the runfiles directory: %s" % runfiles_directory)
+        print("Warning: could not find a file with pattern " + pattern +
+              " in the runfiles directory: %s" % runfiles_directory)
     files_to_dist = []
     for dist_manifest in dist_manifests:
         with open(dist_manifest, "r") as f:
@@ -105,7 +106,12 @@ def main():
         "--archive_prefix", default="",
         help="Path prefix to apply within dist_dir for extracted archives. " +
              "Supported archives: tar.")
-    args = parser.parse_args()
+
+    default_args = files_to_dist("*_default_args.txt")
+    argv = default_args + sys.argv[1:]
+    if default_args:
+        print("[dist] args: {}".format(" ".join(argv)))
+    args = parser.parse_args(argv)
 
     if not os.path.isabs(args.dist_dir):
         # BUILD_WORKSPACE_DIRECTORY is the root of the Bazel workspace containing
