@@ -21,10 +21,10 @@ def docs(
         name,
         srcs,
         default = None,
-        deps = [],
-        func_template = "//build/bazel_common_rules/docs:templates/func.vm",
-        provider_template = "//build/bazel_common_rules/docs:templates/provider.vm",
-        rule_template = "//build/bazel_common_rules/docs:templates/rule.vm"):
+        deps = None,
+        func_template = None,
+        provider_template = None,
+        rule_template = None):
     """Build docs.
 
     The following rules are also generated:
@@ -48,9 +48,21 @@ def docs(
         rule_template: Template for generating docs for rules.
     """
 
+    all_deps = []
+    all_deps += srcs
+    if deps != None:
+        all_deps += deps
+
+    if func_template == None:
+        func_template = "//build/bazel_common_rules/docs:templates/func.vm"
+    if provider_template == None:
+        provider_template = "//build/bazel_common_rules/docs:templates/provider.vm"
+    if rule_template == None:
+        rule_template = "//build/bazel_common_rules/docs:templates/rule.vm"
+
     bzl_library(
         name = name + "_deps",
-        srcs = srcs + deps,
+        srcs = all_deps,
     )
 
     all_markdown_files = []
