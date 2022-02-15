@@ -27,6 +27,7 @@
             converter.setOption("customizedHeaderId", true);
             converter.setOption("ghCompatibleHeaderId", true);
             converter.setOption("headerLevelStart", headerLevelStart);
+            converter.setOption("tables", true);
 
             var divFile = document.getElementById("div-file").cloneNode(true);
             divFile.getElementsByClassName("div-file-contents")[0].innerHTML = converter.makeHtml(responseText);
