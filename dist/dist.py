@@ -58,20 +58,21 @@ def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
     archive_prefix):
 
     for src in files:
-        if not os.path.isfile(src):
-            continue
-
         src_relpath = os.path.basename(src) if flat else src
         src_relpath = os.path.join(prefix, src_relpath)
         src_abspath = os.path.abspath(src)
 
         dst = os.path.join(dist_dir, src_relpath)
-        dst_dirname = os.path.dirname(dst)
-        print("[dist] Copying file: %s" % dst)
-        if not os.path.exists(dst_dirname):
-            os.makedirs(dst_dirname)
+        if os.path.isfile(src):
+            dst_dirname = os.path.dirname(dst)
+            print("[dist] Copying file: %s" % dst)
+            if not os.path.exists(dst_dirname):
+                os.makedirs(dst_dirname)
 
-        shutil.copyfile(src_abspath, dst, follow_symlinks=True)
+            shutil.copyfile(src_abspath, dst, follow_symlinks=True)
+        elif os.path.isdir(src):
+            print("[dist] Copying dir: %s" % dst)
+            shutil.copytree(src_abspath, dst)
 
     for archive in archives:
         try:
