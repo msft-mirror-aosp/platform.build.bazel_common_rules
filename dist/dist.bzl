@@ -26,17 +26,10 @@ def _generate_dist_manifest_impl(ctx):
         content = dist_archives_manifest_content,
     )
 
-    default_args_manifest = ctx.actions.declare_file(ctx.attr.name + "_default_args.txt")
-    ctx.actions.write(
-        output = default_args_manifest,
-        content = "\n".join(ctx.attr.default_args),
-    )
-
     # Create the runfiles object.
     runfiles = ctx.runfiles(files = all_dist_files + all_dist_archives + [
         dist_manifest,
         dist_archives_manifest,
-        default_args_manifest,
     ])
 
     return [DefaultInfo(runfiles = runfiles)]
@@ -58,9 +51,6 @@ In the case of targets, the rule copies the list of `files` from the target's De
 
 In the case of targets, the rule copies the list of `files` from the target's DefaultInfo provider.
 """,
-        ),
-        "default_args": attr.string_list(
-            doc = "Default arguments provided to the script.",
         ),
     },
 )
@@ -104,7 +94,6 @@ def copy_to_dist_dir(
         name = name + "_dist_manifest",
         data = data,
         archives = archives,
-        default_args = default_args,
     )
 
     copy_file(
@@ -123,4 +112,5 @@ def copy_to_dist_dir(
         python_version = "PY3",
         visibility = ["//visibility:public"],
         data = [name + "_dist_manifest"],
+        args = default_args,
     )
