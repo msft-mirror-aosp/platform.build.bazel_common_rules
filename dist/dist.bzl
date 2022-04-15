@@ -71,13 +71,17 @@ def copy_to_dist_dir(
         archives = None,
         flat = None,
         prefix = None,
-        archive_prefix = None):
+        archive_prefix = None,
+        dist_dir = None):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
 
     Example:
     ```
     bazel run //path/to/my:dist_target -- --dist_dir=/tmp/dist
     ```
+
+    Run `bazel run //path/to/my:dist_target -- --help` for explanations of
+    options.
 
     Args:
         name: name of this rule
@@ -90,6 +94,11 @@ def copy_to_dist_dir(
           to apply within dist_dir for copied files.
         archive_prefix: If specified, `--archive_prefix <prefix>` is provided to the script by
           default. Path prefix to apply within dist_dir for extracted archives.
+        dist_dir: If specified, `--dist_dir <dist_dir>` is provided to the script by default.
+
+          In particular, if this is a relative path, it is interpreted as a relative path
+          under workspace root when the target is executed with `bazel run`.
+          See details by running the target with `--help`.
     """
 
     default_args = []
@@ -99,6 +108,8 @@ def copy_to_dist_dir(
         default_args += ["--prefix", prefix]
     if archive_prefix != None:
         default_args += ["--archive_prefix", archive_prefix]
+    if dist_dir != None:
+        default_args += ["--dist_dir", dist_dir]
 
     _generate_dist_manifest(
         name = name + "_dist_manifest",
