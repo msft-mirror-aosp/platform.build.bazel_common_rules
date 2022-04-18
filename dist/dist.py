@@ -95,7 +95,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="Dist Bazel output files into a custom directory.")
     parser.add_argument(
-        "--dist_dir", required=True, help="absolute path to the dist dir")
+        "--dist_dir", required=True, help="""path to the dist dir.
+            If relative, it is interpreted as relative to Bazel workspace root
+            set by the BUILD_WORKSPACE_DIRECTORY environment variable, or
+            PWD if BUILD_WORKSPACE_DIRECTORY is not set.""")
     parser.add_argument(
         "--flat",
         action="store_true",
@@ -108,11 +111,7 @@ def main():
         help="Path prefix to apply within dist_dir for extracted archives. " +
              "Supported archives: tar.")
 
-    default_args = files_to_dist("*_default_args.txt")
-    argv = default_args + sys.argv[1:]
-    if default_args:
-        print("[dist] args: {}".format(" ".join(argv)))
-    args = parser.parse_args(argv)
+    args = parser.parse_args(sys.argv[1:])
 
     if not os.path.isabs(args.dist_dir):
         # BUILD_WORKSPACE_DIRECTORY is the root of the Bazel workspace containing
