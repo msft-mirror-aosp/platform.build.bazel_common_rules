@@ -29,3 +29,13 @@ bzl_library(
         "@bazel_skylib//lib:shell",
     ],
 )
+
+bzl_library(
+    name = "exec",
+    srcs = ["exec.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":exec_aspect",
+        "@bazel_skylib//lib:shell",
+    ],
+)
