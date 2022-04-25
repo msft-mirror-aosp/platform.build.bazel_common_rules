@@ -72,7 +72,7 @@ def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
             shutil.copyfile(src_abspath, dst, follow_symlinks=True)
         elif os.path.isdir(src):
             print("[dist] Copying dir: %s" % dst)
-            shutil.copytree(src_abspath, dst)
+            shutil.copytree(src_abspath, dst, copy_function=shutil.copyfile, dirs_exist_ok=True)
 
     for archive in archives:
         try:
