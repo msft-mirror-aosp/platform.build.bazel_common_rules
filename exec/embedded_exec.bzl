@@ -42,7 +42,7 @@ def _impl(ctx):
 
     quoted_env = " ".join(["{}={}".format(k, shell.quote(ctx.expand_location(v, expand_location_targets))) for k, v in env.items()])
 
-    content += "{} {} {}".format(quoted_env, target[DefaultInfo].files_to_run.executable.short_path, quoted_args)
+    content += '{} {} {} "$@"'.format(quoted_env, target[DefaultInfo].files_to_run.executable.short_path, quoted_args)
 
     ctx.actions.write(out_file, content, is_executable = True)
 
