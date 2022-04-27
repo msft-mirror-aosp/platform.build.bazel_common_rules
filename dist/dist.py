@@ -58,20 +58,21 @@ def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
     archive_prefix):
 
     for src in files:
-        if not os.path.isfile(src):
-            continue
-
         src_relpath = os.path.basename(src) if flat else src
         src_relpath = os.path.join(prefix, src_relpath)
         src_abspath = os.path.abspath(src)
 
         dst = os.path.join(dist_dir, src_relpath)
-        dst_dirname = os.path.dirname(dst)
-        print("[dist] Copying file: %s" % dst)
-        if not os.path.exists(dst_dirname):
-            os.makedirs(dst_dirname)
+        if os.path.isfile(src):
+            dst_dirname = os.path.dirname(dst)
+            print("[dist] Copying file: %s" % dst)
+            if not os.path.exists(dst_dirname):
+                os.makedirs(dst_dirname)
 
-        shutil.copyfile(src_abspath, dst, follow_symlinks=True)
+            shutil.copyfile(src_abspath, dst, follow_symlinks=True)
+        elif os.path.isdir(src):
+            print("[dist] Copying dir: %s" % dst)
+            shutil.copytree(src_abspath, dst)
 
     for archive in archives:
         try:
@@ -94,7 +95,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="Dist Bazel output files into a custom directory.")
     parser.add_argument(
-        "--dist_dir", required=True, help="absolute path to the dist dir")
+        "--dist_dir", required=True, help="""path to the dist dir.
+            If relative, it is interpreted as relative to Bazel workspace root
+            set by the BUILD_WORKSPACE_DIRECTORY environment variable, or
+            PWD if BUILD_WORKSPACE_DIRECTORY is not set.""")
     parser.add_argument(
         "--flat",
         action="store_true",
@@ -107,11 +111,7 @@ def main():
         help="Path prefix to apply within dist_dir for extracted archives. " +
              "Supported archives: tar.")
 
-    default_args = files_to_dist("*_default_args.txt")
-    argv = default_args + sys.argv[1:]
-    if default_args:
-        print("[dist] args: {}".format(" ".join(argv)))
-    args = parser.parse_args(argv)
+    args = parser.parse_args(sys.argv[1:])
 
     if not os.path.isabs(args.dist_dir):
         # BUILD_WORKSPACE_DIRECTORY is the root of the Bazel workspace containing
