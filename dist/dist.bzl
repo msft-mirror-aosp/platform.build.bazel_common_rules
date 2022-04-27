@@ -2,6 +2,7 @@
 # the standard Bazel output user root.
 
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("//build/bazel_common_rules/exec:embedded_exec.bzl", "embedded_exec")
 
 def _label_list_to_manifest(lst):
     """Convert the outputs of a label list to manifest content."""
@@ -117,11 +118,16 @@ def copy_to_dist_dir(
     # dist_manifest so that the runfiles directory is the same, and that the
     # dist_manifest is in the data runfiles of the dist tool.
     native.py_binary(
-        name = name,
+        name = name + "_internal",
         main = name + "_dist.py",
         srcs = [name + "_dist.py"],
         python_version = "PY3",
         visibility = ["//visibility:public"],
         data = [name + "_dist_manifest"],
         args = default_args,
+    )
+
+    embedded_exec(
+        name = name,
+        actual = name + "_internal",
     )
