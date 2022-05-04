@@ -13,5 +13,5 @@
 # limitations under the License.
 
 exports_files([
-    "test_mapping.sh",
+    "test_mappings.sh",
 ])
