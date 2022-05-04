@@ -59,7 +59,7 @@ if [[ ! "$DIST_DIR" == /* ]]; then
 fi
 mkdir -p ${DIST_DIR}
 
-OUTPUT_FILE=${DIST_DIR}/test_mapping.zip
+OUTPUT_FILE=${DIST_DIR}/test_mappings.zip
 echo "Generating ${OUTPUT_FILE}"
 
 trap 'rm -f "$TMPFILE"' EXIT
