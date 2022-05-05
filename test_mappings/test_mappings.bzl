@@ -14,7 +14,7 @@
 
 load("//build/bazel_common_rules/exec:embedded_exec.bzl", "embedded_exec")
 
-def test_mapping_dist(
+def test_mappings_dist(
         name,
         dist_dir = None,
         **kwargs):
@@ -25,21 +25,21 @@ def test_mapping_dist(
     For example:
 
     ```
-    test_mapping(
-        name = "my_test_mapping",
+    test_mappings(
+        name = "my_test_mappings",
         args = ["--dist_dir", "out/dist"],
     )
     ```
 
     ```
     # generate to <workspace_root>/out/dist
-    $ bazel run my_test_mapping
+    $ bazel run my_test_mappings
 
     # generate to <workspace_root>/path
-    $ bazel run my_test_mapping -- --dist_dir=path
+    $ bazel run my_test_mappings -- --dist_dir=path
 
     # generate to /tmp/path
-    $ bazel run my_test_mapping -- --dist_dir=/tmp/path
+    $ bazel run my_test_mappings -- --dist_dir=/tmp/path
     ```
 
     Args:
@@ -49,7 +49,7 @@ def test_mapping_dist(
 
     native.sh_binary(
         name = name + "_internal",
-        srcs = ["//build/bazel_common_rules/test_mapping:test_mapping.sh"],
+        srcs = ["//build/bazel_common_rules/test_mappings:test_mappings.sh"],
         data = ["//prebuilts/build-tools:linux-x86"],
         args = ["--dist_dir", dist_dir] if dist_dir else None,
         **kwargs
