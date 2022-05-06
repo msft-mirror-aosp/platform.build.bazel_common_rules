@@ -2,6 +2,7 @@
 # the standard Bazel output user root.
 
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("//build/bazel_common_rules/exec:embedded_exec.bzl", "embedded_exec")
 
 def _label_list_to_manifest(lst):
     """Convert the outputs of a label list to manifest content."""
@@ -26,17 +27,10 @@ def _generate_dist_manifest_impl(ctx):
         content = dist_archives_manifest_content,
     )
 
-    default_args_manifest = ctx.actions.declare_file(ctx.attr.name + "_default_args.txt")
-    ctx.actions.write(
-        output = default_args_manifest,
-        content = "\n".join(ctx.attr.default_args),
-    )
-
     # Create the runfiles object.
     runfiles = ctx.runfiles(files = all_dist_files + all_dist_archives + [
         dist_manifest,
         dist_archives_manifest,
-        default_args_manifest,
     ])
 
     return [DefaultInfo(runfiles = runfiles)]
@@ -59,9 +53,6 @@ In the case of targets, the rule copies the list of `files` from the target's De
 In the case of targets, the rule copies the list of `files` from the target's DefaultInfo provider.
 """,
         ),
-        "default_args": attr.string_list(
-            doc = "Default arguments provided to the script.",
-        ),
     },
 )
 
@@ -71,13 +62,17 @@ def copy_to_dist_dir(
         archives = None,
         flat = None,
         prefix = None,
-        archive_prefix = None):
+        archive_prefix = None,
+        dist_dir = None):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
 
     Example:
     ```
     bazel run //path/to/my:dist_target -- --dist_dir=/tmp/dist
     ```
+
+    Run `bazel run //path/to/my:dist_target -- --help` for explanations of
+    options.
 
     Args:
         name: name of this rule
@@ -90,6 +85,11 @@ def copy_to_dist_dir(
           to apply within dist_dir for copied files.
         archive_prefix: If specified, `--archive_prefix <prefix>` is provided to the script by
           default. Path prefix to apply within dist_dir for extracted archives.
+        dist_dir: If specified, `--dist_dir <dist_dir>` is provided to the script by default.
+
+          In particular, if this is a relative path, it is interpreted as a relative path
+          under workspace root when the target is executed with `bazel run`.
+          See details by running the target with `--help`.
     """
 
     default_args = []
@@ -99,12 +99,13 @@ def copy_to_dist_dir(
         default_args += ["--prefix", prefix]
     if archive_prefix != None:
         default_args += ["--archive_prefix", archive_prefix]
+    if dist_dir != None:
+        default_args += ["--dist_dir", dist_dir]
 
     _generate_dist_manifest(
         name = name + "_dist_manifest",
         data = data,
         archives = archives,
-        default_args = default_args,
     )
 
     copy_file(
@@ -117,10 +118,16 @@ def copy_to_dist_dir(
     # dist_manifest so that the runfiles directory is the same, and that the
     # dist_manifest is in the data runfiles of the dist tool.
     native.py_binary(
-        name = name,
+        name = name + "_internal",
         main = name + "_dist.py",
         srcs = [name + "_dist.py"],
         python_version = "PY3",
         visibility = ["//visibility:public"],
         data = [name + "_dist_manifest"],
+        args = default_args,
+    )
+
+    embedded_exec(
+        name = name,
+        actual = name + "_internal",
     )
