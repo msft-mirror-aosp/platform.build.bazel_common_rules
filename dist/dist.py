@@ -33,6 +33,7 @@ dist dir, or perform some kind of content hash checking.
 
 import argparse
 import glob
+import logging
 import os
 import shutil
 import sys
@@ -45,8 +46,8 @@ def files_to_dist(pattern):
     dist_manifests = glob.glob(
         os.path.join(runfiles_directory, pattern))
     if not dist_manifests:
-        print("Warning: could not find a file with pattern " + pattern +
-              " in the runfiles directory: %s" % runfiles_directory)
+        logging.warning("Could not find a file with pattern %s"
+                        " in the runfiles directory: %s", pattern, runfiles_directory)
     files_to_dist = []
     for dist_manifest in dist_manifests:
         with open(dist_manifest, "r") as f:
@@ -55,7 +56,8 @@ def files_to_dist(pattern):
 
 
 def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
-    archive_prefix):
+    archive_prefix, **ignored):
+    logging.info("Copying to %s", dist_dir)
 
     for src in files:
         src_relpath = os.path.basename(src) if flat else src
@@ -65,30 +67,38 @@ def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
         dst = os.path.join(dist_dir, src_relpath)
         if os.path.isfile(src):
             dst_dirname = os.path.dirname(dst)
-            print("[dist] Copying file: %s" % dst)
+            logging.debug("Copying file: %s" % dst)
             if not os.path.exists(dst_dirname):
                 os.makedirs(dst_dirname)
 
             shutil.copyfile(src_abspath, dst, follow_symlinks=True)
         elif os.path.isdir(src):
-            print("[dist] Copying dir: %s" % dst)
+            logging.debug("Copying dir: %s" % dst)
             shutil.copytree(src_abspath, dst, copy_function=shutil.copyfile, dirs_exist_ok=True)
 
     for archive in archives:
         try:
             with tarfile.open(archive) as tf:
                 dst_dirname = os.path.join(dist_dir, archive_prefix)
-                print("[dist] Extracting archive: {} -> {}".format(archive,
-                                                                   dst_dirname))
+                logging.debug("Extracting archive: %s -> %s", archive, dst_dirname)
                 tf.extractall(dst_dirname)
         except tarfile.TarError:
             # toybox does not support creating empty tar files, hence the build
             # system may use empty files as empty archives.
             if os.path.getsize(archive) == 0:
-                print("Warning: skipping empty tar file: {}".format(archive))
+                logging.warning("Skipping empty tar file: %s", archive)
                 continue
              # re-raise if we do not know anything about this error
+            logging.exception("Unknown TarError.")
             raise
+
+
+def config_logging(log_level_str):
+    level = getattr(logging, log_level_str.upper(), None)
+    if not isinstance(level, int):
+        sys.stderr.write("ERROR: Invalid --log {}\n".format(log_level_str))
+        sys.exit(1)
+    logging.basicConfig(level=level, format="[dist] %(levelname)s: %(message)s")
 
 
 def main():
@@ -110,8 +120,11 @@ def main():
         "--archive_prefix", default="",
         help="Path prefix to apply within dist_dir for extracted archives. " +
              "Supported archives: tar.")
+    parser.add_argument("--log", help="Log level (debug, info, warning, error)", default="debug")
 
     args = parser.parse_args(sys.argv[1:])
+
+    config_logging(args.log)
 
     if not os.path.isabs(args.dist_dir):
         # BUILD_WORKSPACE_DIRECTORY is the root of the Bazel workspace containing
