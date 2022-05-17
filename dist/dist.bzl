@@ -2,6 +2,7 @@
 # the standard Bazel output user root.
 
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("//build/bazel_common_rules/exec:embedded_exec.bzl", "embedded_exec")
 
 def _label_list_to_manifest(lst):
     """Convert the outputs of a label list to manifest content."""
@@ -62,7 +63,9 @@ def copy_to_dist_dir(
         flat = None,
         prefix = None,
         archive_prefix = None,
-        dist_dir = None):
+        dist_dir = None,
+        log = None,
+        **kwargs):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
 
     Example:
@@ -89,6 +92,14 @@ def copy_to_dist_dir(
           In particular, if this is a relative path, it is interpreted as a relative path
           under workspace root when the target is executed with `bazel run`.
           See details by running the target with `--help`.
+        log: If specified, `--log <log>` is provided to the script by default. This sets the
+          default log level of the script.
+
+          See `dist.py` for allowed values and the default value.
+        kwargs: Additional attributes to the internal rule, e.g.
+          [`visibility`](https://docs.bazel.build/versions/main/visibility.html).
+
+          These additional attributes are only passed to the underlying embedded_exec rule.
     """
 
     default_args = []
@@ -100,6 +111,8 @@ def copy_to_dist_dir(
         default_args += ["--archive_prefix", archive_prefix]
     if dist_dir != None:
         default_args += ["--dist_dir", dist_dir]
+    if log != None:
+        default_args += ["--log", log]
 
     _generate_dist_manifest(
         name = name + "_dist_manifest",
@@ -117,11 +130,17 @@ def copy_to_dist_dir(
     # dist_manifest so that the runfiles directory is the same, and that the
     # dist_manifest is in the data runfiles of the dist tool.
     native.py_binary(
-        name = name,
+        name = name + "_internal",
         main = name + "_dist.py",
         srcs = [name + "_dist.py"],
         python_version = "PY3",
         visibility = ["//visibility:public"],
         data = [name + "_dist_manifest"],
         args = default_args,
+    )
+
+    embedded_exec(
+        name = name,
+        actual = name + "_internal",
+        **kwargs
     )
