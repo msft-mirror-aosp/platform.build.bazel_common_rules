@@ -67,3 +67,30 @@ See `build/bazel_common_rules/exec/tests/BUILD` for examples.
     },
     executable = True,
 )
+
+exec_test = rule(
+    implementation = _impl,
+    doc = """Run a test script when `bazel test` this target.
+
+See [documentation] for the `args` attribute.
+""",
+    attrs = {
+        "data": attr.label_list(aspects = [exec_aspect], allow_files = True, doc = """A list of labels providing runfiles. Labels may be used in `script`.
+
+Executables in `data` must not have the `args` and `env` attribute. Use
+[`embedded_exec`](#embedded_exec) to wrap the depended target so its env and args
+are preserved.
+"""),
+        "hashbang": attr.string(default = "/bin/bash -e", doc = "Hashbang of the script."),
+        "script": attr.string(doc = """The script.
+
+Use `$(rootpath <label>)` to refer to the path of a target specified in `data`. See
+[documentation](https://bazel.build/reference/be/make-variables#predefined_label_variables).
+
+Use `$@` to refer to the args attribute of this target.
+
+See `build/bazel_common_rules/exec/tests/BUILD` for examples.
+"""),
+    },
+    test = True,
+)
