@@ -17,6 +17,7 @@ import sys
 import subprocess
 import unittest
 
+from absl.testing import absltest
 
 def load_arguments():
     parser = argparse.ArgumentParser()
@@ -46,4 +47,4 @@ text""")
 if __name__ == '__main__':
     arguments, unknown = load_arguments()
     sys.argv[1:] = unknown
-    unittest.main()
+    absltest.main()
