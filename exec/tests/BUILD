@@ -77,6 +77,9 @@ py_test(
     srcs = ["exec_test.py"],
     args = ["$(location :combined)"],
     data = [":combined"],
+    deps = [
+        "@io_abseil_py//absl/testing:absltest",
+    ],
 )
 
 test_suite(
