@@ -62,6 +62,7 @@ def copy_to_dist_dir(
         archives = None,
         flat = None,
         prefix = None,
+        strip_components = 0,
         archive_prefix = None,
         dist_dir = None,
         log = None,
@@ -83,6 +84,9 @@ def copy_to_dist_dir(
           extracted to `--dist_dir`.
         flat: If true, `--flat` is provided to the script by default. Flatten the distribution
           directory.
+        strip_components: If specified, `--strip_components <prefix>` is provided to the script. Strip
+          leading components from the existing copied file paths before applying --prefix
+          (if specified).
         prefix: If specified, `--prefix <prefix>` is provided to the script by default. Path prefix
           to apply within dist_dir for copied files.
         archive_prefix: If specified, `--archive_prefix <prefix>` is provided to the script by
@@ -105,6 +109,10 @@ def copy_to_dist_dir(
     default_args = []
     if flat:
         default_args.append("--flat")
+    if strip_components != None:
+        if strip_components < 0:
+            fail("strip_components must greater than 0, but is %s" % strip_components)
+        default_args += ["--strip_components", str(strip_components)]
     if prefix != None:
         default_args += ["--prefix", prefix]
     if archive_prefix != None:
