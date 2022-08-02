@@ -11,3 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+bzl_library(
+    name = "workspace",
+    srcs = [
+        "external.bzl",
+        # The Bazel prebuilt is not updated to define
+        # @bazel_tools//tools/build_defs/repo:lib,
+        # so using sources directly for now.
+        "@bazel_tools//tools:bzl_srcs",
+    ],
+    visibility = ["//visibility:public"],
+)
