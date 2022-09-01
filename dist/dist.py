@@ -56,7 +56,11 @@ def files_to_dist(pattern):
 
 
 def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
-    strip_components, archive_prefix, **ignored):
+    strip_components, archive_prefix, wipe_dist_dir, **ignored):
+
+    if wipe_dist_dir and os.path.exists(dist_dir):
+        shutil.rmtree(dist_dir)
+
     logging.info("Copying to %s", dist_dir)
 
     for src in files:
@@ -130,6 +134,11 @@ def main():
         help="Path prefix to apply within dist_dir for extracted archives. " +
              "Supported archives: tar.")
     parser.add_argument("--log", help="Log level (debug, info, warning, error)", default="debug")
+    parser.add_argument(
+        "--wipe_dist_dir",
+        action="store_true",
+        help="remove existing dist_dir prior to running"
+    )
 
     args = parser.parse_args(sys.argv[1:])
 
