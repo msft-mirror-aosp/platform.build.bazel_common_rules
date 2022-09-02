@@ -33,6 +33,7 @@ dist dir, or perform some kind of content hash checking.
 
 import argparse
 import glob
+import logging
 import os
 import shutil
 import sys
@@ -45,8 +46,8 @@ def files_to_dist(pattern):
     dist_manifests = glob.glob(
         os.path.join(runfiles_directory, pattern))
     if not dist_manifests:
-        print("Warning: could not find a file with pattern " + pattern +
-              " in the runfiles directory: %s" % runfiles_directory)
+        logging.warning("Could not find a file with pattern %s"
+                        " in the runfiles directory: %s", pattern, runfiles_directory)
     files_to_dist = []
     for dist_manifest in dist_manifests:
         with open(dist_manifest, "r") as f:
@@ -55,50 +56,72 @@ def files_to_dist(pattern):
 
 
 def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
-    archive_prefix):
+    strip_components, archive_prefix, **ignored):
+    logging.info("Copying to %s", dist_dir)
 
     for src in files:
-        if not os.path.isfile(src):
-            continue
+        if flat:
+            src_relpath = os.path.basename(src)
+        elif strip_components > 0:
+            src_relpath = src.split('/', strip_components)[-1]
+        else:
+            src_relpath = src
 
-        src_relpath = os.path.basename(src) if flat else src
         src_relpath = os.path.join(prefix, src_relpath)
         src_abspath = os.path.abspath(src)
 
         dst = os.path.join(dist_dir, src_relpath)
-        dst_dirname = os.path.dirname(dst)
-        print("[dist] Copying file: %s" % dst)
-        if not os.path.exists(dst_dirname):
-            os.makedirs(dst_dirname)
+        if os.path.isfile(src):
+            dst_dirname = os.path.dirname(dst)
+            logging.debug("Copying file: %s" % dst)
+            if not os.path.exists(dst_dirname):
+                os.makedirs(dst_dirname)
 
-        shutil.copyfile(src_abspath, dst, follow_symlinks=True)
+            shutil.copyfile(src_abspath, dst, follow_symlinks=True)
+        elif os.path.isdir(src):
+            logging.debug("Copying dir: %s" % dst)
+            shutil.copytree(src_abspath, dst, copy_function=shutil.copyfile, dirs_exist_ok=True)
 
     for archive in archives:
         try:
             with tarfile.open(archive) as tf:
                 dst_dirname = os.path.join(dist_dir, archive_prefix)
-                print("[dist] Extracting archive: {} -> {}".format(archive,
-                                                                   dst_dirname))
+                logging.debug("Extracting archive: %s -> %s", archive, dst_dirname)
                 tf.extractall(dst_dirname)
         except tarfile.TarError:
             # toybox does not support creating empty tar files, hence the build
             # system may use empty files as empty archives.
             if os.path.getsize(archive) == 0:
-                print("Warning: skipping empty tar file: {}".format(archive))
+                logging.warning("Skipping empty tar file: %s", archive)
                 continue
              # re-raise if we do not know anything about this error
+            logging.exception("Unknown TarError.")
             raise
+
+
+def config_logging(log_level_str):
+    level = getattr(logging, log_level_str.upper(), None)
+    if not isinstance(level, int):
+        sys.stderr.write("ERROR: Invalid --log {}\n".format(log_level_str))
+        sys.exit(1)
+    logging.basicConfig(level=level, format="[dist] %(levelname)s: %(message)s")
 
 
 def main():
     parser = argparse.ArgumentParser(
         description="Dist Bazel output files into a custom directory.")
     parser.add_argument(
-        "--dist_dir", required=True, help="absolute path to the dist dir")
+        "--dist_dir", required=True, help="""path to the dist dir.
+            If relative, it is interpreted as relative to Bazel workspace root
+            set by the BUILD_WORKSPACE_DIRECTORY environment variable, or
+            PWD if BUILD_WORKSPACE_DIRECTORY is not set.""")
     parser.add_argument(
         "--flat",
         action="store_true",
         help="ignore subdirectories in the manifest")
+    parser.add_argument(
+        "--strip_components", type=int, default=0,
+        help="number of leading components to strip from paths before applying --prefix")
     parser.add_argument(
         "--prefix", default="",
         help="path prefix to apply within dist_dir for copied files")
@@ -106,12 +129,11 @@ def main():
         "--archive_prefix", default="",
         help="Path prefix to apply within dist_dir for extracted archives. " +
              "Supported archives: tar.")
+    parser.add_argument("--log", help="Log level (debug, info, warning, error)", default="debug")
 
-    default_args = files_to_dist("*_default_args.txt")
-    argv = default_args + sys.argv[1:]
-    if default_args:
-        print("[dist] args: {}".format(" ".join(argv)))
-    args = parser.parse_args(argv)
+    args = parser.parse_args(sys.argv[1:])
+
+    config_logging(args.log)
 
     if not os.path.isabs(args.dist_dir):
         # BUILD_WORKSPACE_DIRECTORY is the root of the Bazel workspace containing
