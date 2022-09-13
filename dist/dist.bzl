@@ -65,6 +65,7 @@ def copy_to_dist_dir(
         strip_components = 0,
         archive_prefix = None,
         dist_dir = None,
+        wipe_dist_dir = None,
         log = None,
         **kwargs):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
@@ -95,7 +96,13 @@ def copy_to_dist_dir(
 
           In particular, if this is a relative path, it is interpreted as a relative path
           under workspace root when the target is executed with `bazel run`.
+
+          By default, the script will overwrite any files of the same name in `dist_dir`, but preserve
+          any other contents there. This can be overriden with `wipe_dist_dir`.
+
           See details by running the target with `--help`.
+        wipe_dist_dir: If true, and `dist_dir` already exists, `dist_dir` will be removed prior to
+          copying.
         log: If specified, `--log <log>` is provided to the script by default. This sets the
           default log level of the script.
 
@@ -119,6 +126,8 @@ def copy_to_dist_dir(
         default_args += ["--archive_prefix", archive_prefix]
     if dist_dir != None:
         default_args += ["--dist_dir", dist_dir]
+    if wipe_dist_dir:
+        default_args.append("--wipe_dist_dir")
     if log != None:
         default_args += ["--log", log]
 
