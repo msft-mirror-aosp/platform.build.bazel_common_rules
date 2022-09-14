@@ -66,7 +66,6 @@ def copy_to_dist_dir(
         archive_prefix = None,
         dist_dir = None,
         wipe_dist_dir = None,
-        allow_duplicate_filenames = None,
         log = None,
         **kwargs):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
@@ -104,14 +103,6 @@ def copy_to_dist_dir(
           See details by running the target with `--help`.
         wipe_dist_dir: If true, and `dist_dir` already exists, `dist_dir` will be removed prior to
           copying.
-        allow_duplicate_filenames: If true, duplicate filenames from different sources will be allowed to
-          be copied to the same `dist_dir` (with subsequent sources overwriting previous sources).
-
-          With this option enabled, order matters. The final source of the file listed in `data` will be the
-          final version copied.
-
-          Use of this option is discouraged. Preferably, the input `data` targets would not include labels
-          which produce a duplicate filename. This option is available as a last resort.
         log: If specified, `--log <log>` is provided to the script by default. This sets the
           default log level of the script.
 
@@ -137,8 +128,6 @@ def copy_to_dist_dir(
         default_args += ["--dist_dir", dist_dir]
     if wipe_dist_dir:
         default_args.append("--wipe_dist_dir")
-    if allow_duplicate_filenames:
-        default_args.append("--allow_duplicate_filenames")
     if log != None:
         default_args += ["--log", log]
 
