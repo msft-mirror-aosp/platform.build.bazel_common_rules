@@ -33,12 +33,32 @@ dist dir, or perform some kind of content hash checking.
 
 import argparse
 import collections
+import fnmatch
 import glob
 import logging
 import os
+import pathlib
 import shutil
 import sys
 import tarfile
+
+
+def copy_with_modes(src, dst, mode_overrides):
+    mode_override = None
+    for (pattern, mode) in mode_overrides:
+        if fnmatch.fnmatch(src, pattern):
+            mode_override = mode
+            break
+
+    # Remove destination file that may be write-protected
+    pathlib.Path(dst).unlink(missing_ok=True)
+
+    # Copy the file with copy2 to preserve whatever permissions are set on src
+    shutil.copy2(os.path.abspath(src), dst, follow_symlinks=True)
+
+    if mode_override:
+        os.chmod(dst, mode_override)
+
 
 def ensure_unique_filenames(files):
     basename_to_srcs_map = collections.defaultdict(list)
@@ -71,7 +91,7 @@ def files_to_dist(pattern):
     return files_to_dist
 
 
-def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
+def copy_files_to_dist_dir(files, archives, mode_overrides, dist_dir, flat, prefix,
     strip_components, archive_prefix, wipe_dist_dir, allow_duplicate_filenames, **ignored):
 
     if flat and not allow_duplicate_filenames:
@@ -91,7 +111,6 @@ def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
             src_relpath = src
 
         src_relpath = os.path.join(prefix, src_relpath)
-        src_abspath = os.path.abspath(src)
 
         dst = os.path.join(dist_dir, src_relpath)
         if os.path.isfile(src):
@@ -100,10 +119,15 @@ def copy_files_to_dist_dir(files, archives, dist_dir, flat, prefix,
             if not os.path.exists(dst_dirname):
                 os.makedirs(dst_dirname)
 
-            shutil.copyfile(src_abspath, dst, follow_symlinks=True)
+            copy_with_modes(src, dst, mode_overrides)
         elif os.path.isdir(src):
             logging.debug("Copying dir: %s" % dst)
-            shutil.copytree(src_abspath, dst, copy_function=shutil.copyfile, dirs_exist_ok=True)
+            shutil.copytree(
+                os.path.abspath(src),
+                dst,
+                copy_function=lambda s, d: copy_with_modes(s, d, mode_overrides),
+                dirs_exist_ok=True,
+            )
 
     for archive in archives:
         try:
@@ -163,8 +187,24 @@ def main():
         action="store_true",
         help="allow multiple files with the same name to be copied to dist_dir (overwriting)"
     )
+    parser.add_argument(
+        "--mode_override",
+        metavar=("PATTERN", "MODE"),
+        action="append",
+        nargs=2,
+        default=[],
+        help='glob pattern and mode to set on files matching pattern (e.g. --mode_override "*.sh" "755")'
+    )
 
     args = parser.parse_args(sys.argv[1:])
+
+    mode_overrides = []
+    for (pattern, mode) in args.mode_override:
+        try:
+            mode_overrides.append((pattern, int(mode, 8)))
+        except ValueError:
+            logging.error("invalid octal permissions: %s", mode)
+            sys.exit(1)
 
     config_logging(args.log)
 
@@ -177,7 +217,7 @@ def main():
 
     files = files_to_dist("*_dist_manifest.txt")
     archives = files_to_dist("*_dist_archives_manifest.txt")
-    copy_files_to_dist_dir(files, archives, **vars(args))
+    copy_files_to_dist_dir(files, archives, mode_overrides, **vars(args))
 
 
 if __name__ == "__main__":
