@@ -65,6 +65,9 @@ def copy_to_dist_dir(
         strip_components = 0,
         archive_prefix = None,
         dist_dir = None,
+        wipe_dist_dir = None,
+        allow_duplicate_filenames = None,
+        mode_overrides = None,
         log = None,
         **kwargs):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
@@ -95,7 +98,39 @@ def copy_to_dist_dir(
 
           In particular, if this is a relative path, it is interpreted as a relative path
           under workspace root when the target is executed with `bazel run`.
+
+          By default, the script will overwrite any files of the same name in `dist_dir`, but preserve
+          any other contents there. This can be overridden with `wipe_dist_dir`.
+
           See details by running the target with `--help`.
+        wipe_dist_dir: If true, and `dist_dir` already exists, `dist_dir` will be removed prior to
+          copying.
+        allow_duplicate_filenames: If true, duplicate filenames from different sources will be allowed to
+          be copied to the same `dist_dir` (with subsequent sources overwriting previous sources).
+
+          With this option enabled, order matters. The final source of the file listed in `data` will be the
+          final version copied.
+
+          Use of this option is discouraged. Preferably, the input `data` targets would not include labels
+          which produce a duplicate filename. This option is available as a last resort.
+        mode_overrides: Map of glob patterns to octal permissions. If the file path being copied matches the
+          glob pattern, the corresponding permissions will be set in `dist_dir`. Full file paths are used for
+          matching even if `flat = True`. Paths are relative to the workspace root.
+
+          Order matters; the overrides will be stepped through in the order given for each file. To prevent
+          buildifier from sorting the list, use the `# do not sort` magic line. For example:
+          ```
+          mode_overrides = {
+              # do not sort
+              "**/*.sh": 755,
+              "**/hello_world": 755,
+              "restricted_dir/**": 600,
+              "common/kernel_aarch64/vmlinux": 755,
+              "**/*": 644,
+          },
+          ```
+
+          If no `mode_overrides` are provided, the default Bazel output permissions are preserved.
         log: If specified, `--log <log>` is provided to the script by default. This sets the
           default log level of the script.
 
@@ -119,6 +154,13 @@ def copy_to_dist_dir(
         default_args += ["--archive_prefix", archive_prefix]
     if dist_dir != None:
         default_args += ["--dist_dir", dist_dir]
+    if wipe_dist_dir:
+        default_args.append("--wipe_dist_dir")
+    if allow_duplicate_filenames:
+        default_args.append("--allow_duplicate_filenames")
+    if mode_overrides != None:
+        for (pattern, mode) in mode_overrides.items():
+            default_args += ["--mode_override", pattern, str(mode)]
     if log != None:
         default_args += ["--log", log]
 
