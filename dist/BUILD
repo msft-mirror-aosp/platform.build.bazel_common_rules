@@ -21,3 +21,17 @@ copy_to_dist_dir(
         "//bionic/libdl",
     ],
 )
+
+# For testing that `testonly` deps can be dist'd.
+genrule(
+    name = "testonly_sample",
+    testonly = True,
+    outs = ["testonly.txt"],
+    cmd = "touch $@",
+)
+
+copy_to_dist_dir(
+    name = "dist_testonly_sample",
+    testonly = True,
+    data = [":testonly_sample"],
+)
