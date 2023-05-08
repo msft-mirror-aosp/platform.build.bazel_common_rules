@@ -69,6 +69,7 @@ def copy_to_dist_dir(
         allow_duplicate_filenames = None,
         mode_overrides = None,
         log = None,
+        testonly = False,
         **kwargs):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
 
@@ -134,6 +135,10 @@ def copy_to_dist_dir(
         log: If specified, `--log <log>` is provided to the script by default. This sets the
           default log level of the script.
 
+        testonly: If enabled, testonly will also be set on the internal targets
+          for Bazel analysis to succeed due to the nature of testonly enforcement
+          on reverse dependencies.
+
           See `dist.py` for allowed values and the default value.
         kwargs: Additional attributes to the internal rule, e.g.
           [`visibility`](https://docs.bazel.build/versions/main/visibility.html).
@@ -168,6 +173,7 @@ def copy_to_dist_dir(
         name = name + "_dist_manifest",
         data = data,
         archives = archives,
+        testonly = testonly,
     )
 
     copy_file(
@@ -186,11 +192,13 @@ def copy_to_dist_dir(
         python_version = "PY3",
         visibility = ["//visibility:public"],
         data = [name + "_dist_manifest"],
+        testonly = testonly,
         args = default_args,
     )
 
     embedded_exec(
         name = name,
         actual = name + "_internal",
+        testonly = testonly,
         **kwargs
     )
