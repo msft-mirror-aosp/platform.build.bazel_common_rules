@@ -48,6 +48,11 @@ exec = rule(
     doc = """Run a script when `bazel run` this target.
 
 See [documentation] for the `args` attribute.
+
+**NOTE**: Like [genrule](https://bazel.build/reference/be/general#genrule)s,
+hermeticity is not enforced or guaranteed, especially if `script` accesses PATH.
+See [`Genrule Environment`](https://bazel.build/reference/be/general#genrule-environment)
+for details.
 """,
     attrs = {
         "data": attr.label_list(aspects = [exec_aspect], allow_files = True, doc = """A list of labels providing runfiles. Labels may be used in `script`.
@@ -75,6 +80,11 @@ exec_test = rule(
     doc = """Run a test script when `bazel test` this target.
 
 See [documentation] for the `args` attribute.
+
+**NOTE**: Like [genrule](https://bazel.build/reference/be/general#genrule)s,
+hermeticity is not enforced or guaranteed, especially if `script` accesses PATH.
+See [`Genrule Environment`](https://bazel.build/reference/be/general#genrule-environment)
+for details.
 """,
     attrs = {
         "data": attr.label_list(aspects = [exec_aspect], allow_files = True, doc = """A list of labels providing runfiles. Labels may be used in `script`.
@@ -102,12 +112,20 @@ def exec_rule(
         attrs = None):
     """Returns a rule() that is similar to `exec`, but with the given incoming transition.
 
+    **NOTE**: Like [genrule](https://bazel.build/reference/be/general#genrule)s,
+    hermeticity is not enforced or guaranteed for targets of the returned
+    rule, especially if a target specifies `script` that accesses PATH.
+    See [`Genrule Environment`](https://bazel.build/reference/be/general#genrule-environment)
+    for details.
+
     Args:
         cfg: [Incoming edge transition](https://bazel.build/extending/config#incoming-edge-transitions)
             on the rule
         attrs: Additional attributes to be added to the rule.
 
             Specify `_allowlist_function_transition` if you need a transition.
+    Returns:
+        a rule
     """
 
     fixed_attrs = {
