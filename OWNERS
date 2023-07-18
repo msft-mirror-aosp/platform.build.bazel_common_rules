@@ -5,4 +5,4 @@ include platform/build/soong:/OWNERS
 #
 # The kernel follows a different branching model than that of platform, which
 # needs the 'master' branch to be explicitly declared.
-include kernel/build:master:/kleaf/OWNERS
+include kernel/build:main:/kleaf/OWNERS
