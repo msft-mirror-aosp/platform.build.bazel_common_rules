@@ -25,9 +25,6 @@ ImageProvider = provider(
 # TODO(b/273846592): Move to a common file, same for other files.
 _BAZEL_WORK_DIR = "${TEST_SRCDIR}/${TEST_WORKSPACE}/"
 
-# Target name in main branches are fixed, and in aosp branches it is prefixed
-# with "aosp_".
-_DEFAULT_BUILD_TARGET = "cf_x86_64_phone-userdebug"
 _IMAGE_ARTIFACT_PATH = "cf_x86_64_phone-img-{BUILD_ID}.zip"
 _HOST_PACKAGE_ARTIFACT_PATH = "cvd-host_package.tar.gz"
 
@@ -35,16 +32,17 @@ def _download_cvd_artifact_impl(ctx):
     build_id = ctx.attr.build_id[BuildSettingInfo].value
     branch = ctx.attr.branch[BuildSettingInfo].value
     image_artifact_path = _IMAGE_ARTIFACT_PATH.replace("{BUILD_ID}", build_id)
-    target = _DEFAULT_BUILD_TARGET
+    target = ctx.attr.target[BuildSettingInfo].value
     if not build_id:
         fail("build_id must be specified to download build image.")
     if not branch:
         fail("branch must be specified to download build image.")
+    if not target:
+        fail("Target must be specified to download build image.")
 
     # Add "aosp_" prefix to target and artifact name if the branch is AOSP.
     if "aosp" in branch:
         image_artifact_path = "aosp_" + image_artifact_path
-        target = "aosp_" + target
 
     image_out_file = _download_helper(
         ctx,
@@ -94,12 +92,17 @@ def _download_helper(ctx, artifact_path, build_id, branch, target):
 download_cvd_artifact = rule(
     attrs = {
         "_create_script_template": attr.label(
-            default = "//remote_device:download_cvd_build.sh.template",
+            default = ":download_cvd_build.sh.template",
             allow_single_file = True,
         ),
         "build_id": attr.label(
             mandatory = True,
             doc = "sets the build id of the Android image",
+        ),
+        "target": attr.label(
+            mandatory = True,
+            doc = "sets the build target of the Android image. Example: " +
+                  "aosp_cf_x86_64_phone-trunk_staging-userdebug.",
         ),
         "branch": attr.label(
             mandatory = True,
