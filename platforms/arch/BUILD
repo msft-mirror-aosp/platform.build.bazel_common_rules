@@ -6,24 +6,24 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-constraint_value(
+alias(
     name = "arm",
-    constraint_setting = "@platforms//cpu:cpu",
+    actual = "@platforms//cpu:arm",
 )
 
-constraint_value(
+alias(
     name = "arm64",
-    constraint_setting = "@platforms//cpu:cpu",
+    actual = "@platforms//cpu:arm64",
 )
 
-constraint_value(
+alias(
     name = "riscv64",
-    constraint_setting = "@platforms//cpu:cpu",
+    actual = "@platforms//cpu:riscv64",
 )
 
-constraint_value(
+alias(
     name = "x86",
-    constraint_setting = "@platforms//cpu:cpu",
+    actual = "@platforms//cpu:x86_32",
 )
 
 # Alias to the local_jdk's toolchain constraint to make local_jdk resolve
