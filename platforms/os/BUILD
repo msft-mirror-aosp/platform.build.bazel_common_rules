@@ -8,9 +8,9 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-constraint_value(
+alias(
     name = "android",
-    constraint_setting = "@platforms//os:os",
+    actual = "@platforms//os:android",
 )
 
 config_setting(
@@ -49,14 +49,14 @@ config_setting(
     ],
 )
 
-constraint_value(
+alias(
     name = "windows",
-    constraint_setting = "@platforms//os:os",
+    actual = "@platforms//os:windows",
 )
 
-constraint_value(
+alias(
     name = "darwin",
-    constraint_setting = "@platforms//os:os",
+    actual = "@platforms//os:macos",
 )
 
 selects.config_setting_group(
