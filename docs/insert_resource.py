@@ -14,9 +14,10 @@ def main(infile, outfile, resources):
     magic = inlines.index(MAGIC)
 
     outlines = inlines[:magic]
-    for resource_name in resources:
+    for resource in resources:
+        resource_name, path = resource.rsplit(":", 1)
         outlines.append('<div hidden class="embedded_resource" id="{}-res">\n'.format(os.path.basename(resource_name)))
-        with open(resource_name, 'rb') as resource:
+        with open(path, 'rb') as resource:
             # Resources need to be base64 encoded. For example, the resource file may be in
             # markdown format:
             #    `<name>`
@@ -35,6 +36,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("--infile", required=True, type=argparse.FileType('r'), help="input file")
     parser.add_argument("--outfile", required=True, type=argparse.FileType('w'), help="output file")
-    parser.add_argument("resources", nargs='+', help="resource files")
+    parser.add_argument("resources", metavar="NAME:PATH", nargs='+', help="resource files")
     args = parser.parse_args()
     main(**vars(args))

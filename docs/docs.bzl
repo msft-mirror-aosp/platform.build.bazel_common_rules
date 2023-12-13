@@ -76,23 +76,21 @@ def docs(
         srcs = all_deps,
     )
 
-    all_markdown_files = []
+    # Key: label to bzl. Value: label to markdown.
+    bzl_md = {}
+
     for src in srcs:
+        stardoc_target_name = name + "-" + _sanitize_label_as_filename(src)
         stardoc(
-            name = name + "-" + _sanitize_label_as_filename(src),
-            out = name + "/" + _sanitize_label_as_filename(src),
+            name = stardoc_target_name,
+            out = name + "/" + _sanitize_label_as_filename(src) + ".md",
             input = src,
             deps = [":" + name + "_deps"],
             func_template = func_template,
             provider_template = provider_template,
             rule_template = rule_template,
         )
-        all_markdown_files.append((name + "/" + _sanitize_label_as_filename(src), src))
-
-    native.filegroup(
-        name = name + "_markdown_files",
-        srcs = [target for target, _ in all_markdown_files],
-    )
+        bzl_md[src] = stardoc_target_name
 
     default_file_cmd = """touch $@ && """
     for src in srcs:
@@ -118,18 +116,20 @@ def docs(
         srcs = [
             "//build/bazel_common_rules/docs:index.html",
             ":{name}_default_file.html.frag".format(name = name),
-            ":{name}_markdown_files".format(name = name),
-        ],
+        ] + bzl_md.keys() + bzl_md.values(),
         outs = [
             name + "/root/index.html",
         ],
         cmd = """
-            $(location //build/bazel_common_rules/docs:insert_resource.py) \
-              --infile $(location //build/bazel_common_rules/docs:index.html) \
-              --outfile $(location {name}/root/index.html) \
-              $(location :{name}_default_file.html.frag) \
-              $(locations :{name}_markdown_files)
-        """.format(name = name),
+            $(location //build/bazel_common_rules/docs:insert_resource.py) \\
+              --infile $(location //build/bazel_common_rules/docs:index.html) \\
+              --outfile $(location {name}/root/index.html) \\
+              default_file.html.frag:$(location :{name}_default_file.html.frag) \\
+              {bzl_md}
+        """.format(
+            name = name,
+            bzl_md = " ".join(["$(location {}):$(location {})".format(bzl, md) for bzl, md in bzl_md.items()]),
+        ),
         tools = [
             "//build/bazel_common_rules/docs:insert_resource.py",
         ],
