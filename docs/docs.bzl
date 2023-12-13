@@ -12,9 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
-load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
+"""Generate bare-bones docs with Stardoc"""
+
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+def _sanitize_label_as_filename(label):
+    """Sanitize a Bazel label so it is safe to be used as a filename."""
+    label_text = str(label)
+    return _normalize(label_text)
+
+def _normalize(s):
+    """Returns a normalized string by replacing non-letters / non-numbers as underscores."""
+    return "".join([c if c.isalnum() else "_" for c in s.elems()])
 
 # TODO: Add aspect_template when necessary
 def docs(
@@ -68,15 +79,15 @@ def docs(
     all_markdown_files = []
     for src in srcs:
         stardoc(
-            name = name + "-" + src,
-            out = name + "/" + src,
+            name = name + "-" + _sanitize_label_as_filename(src),
+            out = name + "/" + _sanitize_label_as_filename(src),
             input = src,
             deps = [":" + name + "_deps"],
             func_template = func_template,
             provider_template = provider_template,
             rule_template = rule_template,
         )
-        all_markdown_files.append((name + "/" + src, src))
+        all_markdown_files.append((name + "/" + _sanitize_label_as_filename(src), src))
 
     native.filegroup(
         name = name + "_markdown_files",
@@ -84,7 +95,7 @@ def docs(
     )
 
     default_file_cmd = """touch $@ && """
-    for target, src in all_markdown_files:
+    for src in srcs:
         if default == src:
             default_file_cmd += """echo '<div hidden><a href="#{src}" id="default_file">{src}</a></div>' >> $@ &&""".format(
                 src = src,
