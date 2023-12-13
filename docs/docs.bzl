@@ -35,7 +35,8 @@ def docs(
         deps = None,
         func_template = None,
         provider_template = None,
-        rule_template = None):
+        rule_template = None,
+        **kwargs):
     """Build docs.
 
     The following rules are also generated:
@@ -57,6 +58,7 @@ def docs(
         func_template: Template for generating docs for functions.
         provider_template: Template for generating docs for providers.
         rule_template: Template for generating docs for rules.
+        **kwargs: kwargs to internal rules
     """
 
     all_deps = []
@@ -71,9 +73,14 @@ def docs(
     if rule_template == None:
         rule_template = "//build/bazel_common_rules/docs:templates/rule.vm"
 
+    private_kwargs = kwargs | {
+        "visibility": ["//visibility:private"],
+    }
+
     bzl_library(
         name = name + "_deps",
         srcs = all_deps,
+        **private_kwargs
     )
 
     # Key: label to bzl. Value: label to markdown.
@@ -89,6 +96,7 @@ def docs(
             func_template = func_template,
             provider_template = provider_template,
             rule_template = rule_template,
+            **private_kwargs
         )
         bzl_md[src] = stardoc_target_name
 
@@ -109,6 +117,7 @@ def docs(
             name + "/docs_resources/default_file.html.frag",
         ],
         cmd = default_file_cmd,
+        **private_kwargs
     )
 
     native.genrule(
@@ -133,6 +142,7 @@ def docs(
         tools = [
             "//build/bazel_common_rules/docs:insert_resource.py",
         ],
+        **kwargs
     )
 
     native.genrule(
@@ -148,6 +158,7 @@ python3 -m http.server 8080
 '
         chmod +x $(location {name}/run_server.sh)
         """.format(name = name),
+        **private_kwargs
     )
 
     native.sh_binary(
@@ -156,9 +167,11 @@ python3 -m http.server 8080
             ":{name}_run_server.sh".format(name = name),
         ],
         data = [":" + name],
+        **kwargs
     )
 
     copy_to_dist_dir(
         name = name + "_dist",
         data = [":" + name],
+        **kwargs
     )
