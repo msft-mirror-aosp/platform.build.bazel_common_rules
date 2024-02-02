@@ -12,9 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
-load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
+"""Generate bare-bones docs with Stardoc"""
+
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+def _sanitize_label_as_filename(label):
+    """Sanitize a Bazel label so it is safe to be used as a filename."""
+    label_text = str(label)
+    return _normalize(label_text)
+
+def _normalize(s):
+    """Returns a normalized string by replacing non-letters / non-numbers as underscores."""
+    return "".join([c if c.isalnum() else "_" for c in s.elems()])
 
 # TODO: Add aspect_template when necessary
 def docs(
@@ -24,7 +35,8 @@ def docs(
         deps = None,
         func_template = None,
         provider_template = None,
-        rule_template = None):
+        rule_template = None,
+        **kwargs):
     """Build docs.
 
     The following rules are also generated:
@@ -46,6 +58,7 @@ def docs(
         func_template: Template for generating docs for functions.
         provider_template: Template for generating docs for providers.
         rule_template: Template for generating docs for rules.
+        **kwargs: kwargs to internal rules
     """
 
     all_deps = []
@@ -60,31 +73,35 @@ def docs(
     if rule_template == None:
         rule_template = "//build/bazel_common_rules/docs:templates/rule.vm"
 
+    private_kwargs = kwargs | {
+        "visibility": ["//visibility:private"],
+    }
+
     bzl_library(
         name = name + "_deps",
         srcs = all_deps,
+        **private_kwargs
     )
 
-    all_markdown_files = []
+    # Key: label to bzl. Value: label to markdown.
+    bzl_md = {}
+
     for src in srcs:
+        stardoc_target_name = name + "-" + _sanitize_label_as_filename(src)
         stardoc(
-            name = name + "-" + src,
-            out = name + "/" + src,
+            name = stardoc_target_name,
+            out = name + "/" + _sanitize_label_as_filename(src) + ".md",
             input = src,
             deps = [":" + name + "_deps"],
             func_template = func_template,
             provider_template = provider_template,
             rule_template = rule_template,
+            **private_kwargs
         )
-        all_markdown_files.append((name + "/" + src, src))
-
-    native.filegroup(
-        name = name + "_markdown_files",
-        srcs = [target for target, _ in all_markdown_files],
-    )
+        bzl_md[src] = stardoc_target_name
 
     default_file_cmd = """touch $@ && """
-    for target, src in all_markdown_files:
+    for src in srcs:
         if default == src:
             default_file_cmd += """echo '<div hidden><a href="#{src}" id="default_file">{src}</a></div>' >> $@ &&""".format(
                 src = src,
@@ -100,6 +117,7 @@ def docs(
             name + "/docs_resources/default_file.html.frag",
         ],
         cmd = default_file_cmd,
+        **private_kwargs
     )
 
     native.genrule(
@@ -107,21 +125,24 @@ def docs(
         srcs = [
             "//build/bazel_common_rules/docs:index.html",
             ":{name}_default_file.html.frag".format(name = name),
-            ":{name}_markdown_files".format(name = name),
-        ],
+        ] + bzl_md.keys() + bzl_md.values(),
         outs = [
             name + "/root/index.html",
         ],
         cmd = """
-            $(location //build/bazel_common_rules/docs:insert_resource.py) \
-              --infile $(location //build/bazel_common_rules/docs:index.html) \
-              --outfile $(location {name}/root/index.html) \
-              $(location :{name}_default_file.html.frag) \
-              $(locations :{name}_markdown_files)
-        """.format(name = name),
+            $(location //build/bazel_common_rules/docs:insert_resource.py) \\
+              --infile $(location //build/bazel_common_rules/docs:index.html) \\
+              --outfile $(location {name}/root/index.html) \\
+              default_file.html.frag:$(location :{name}_default_file.html.frag) \\
+              {bzl_md}
+        """.format(
+            name = name,
+            bzl_md = " ".join(["$(location {}):$(location {})".format(bzl, md) for bzl, md in bzl_md.items()]),
+        ),
         tools = [
             "//build/bazel_common_rules/docs:insert_resource.py",
         ],
+        **kwargs
     )
 
     native.genrule(
@@ -137,6 +158,7 @@ python3 -m http.server 8080
 '
         chmod +x $(location {name}/run_server.sh)
         """.format(name = name),
+        **private_kwargs
     )
 
     native.sh_binary(
@@ -145,9 +167,11 @@ python3 -m http.server 8080
             ":{name}_run_server.sh".format(name = name),
         ],
         data = [":" + name],
+        **kwargs
     )
 
     copy_to_dist_dir(
         name = name + "_dist",
         data = [":" + name],
+        **kwargs
     )
