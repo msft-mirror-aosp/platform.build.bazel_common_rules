@@ -9,21 +9,25 @@ package(
 alias(
     name = "arm",
     actual = "@platforms//cpu:arm",
+    deprecation = "Use @platforms//cpu:arm directly.",
 )
 
 alias(
     name = "arm64",
     actual = "@platforms//cpu:arm64",
+    deprecation = "Use @platforms//cpu:arm64 directly.",
 )
 
 alias(
     name = "riscv64",
     actual = "@platforms//cpu:riscv64",
+    deprecation = "Use @platforms//cpu:riscv64 directly.",
 )
 
 alias(
     name = "x86",
     actual = "@platforms//cpu:x86_32",
+    deprecation = "Use @platforms//cpu:x86_32 directly.",
 )
 
 # Alias to the local_jdk's toolchain constraint to make local_jdk resolve
@@ -31,6 +35,7 @@ alias(
 alias(
     name = "x86_64",
     actual = "@platforms//cpu:x86_64",
+    deprecation = "Use @platforms//cpu:x86_64 directly.",
 )
 
 constraint_setting(
