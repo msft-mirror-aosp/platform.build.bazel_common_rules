@@ -11,6 +11,7 @@ package(
 alias(
     name = "android",
     actual = "@platforms//os:android",
+    deprecation = "Use @platforms//os:android directly.",
 )
 
 config_setting(
@@ -25,11 +26,13 @@ config_setting(
 alias(
     name = "linux",
     actual = "@platforms//os:linux",
+    deprecation = "Use @platforms//os:linux directly.",
 )
 
 alias(
     name = "linux_glibc",
     actual = "@platforms//os:linux",
+    deprecation = "Use @platforms//os:linux directly.",
 )
 
 constraint_value(
@@ -52,11 +55,13 @@ config_setting(
 alias(
     name = "windows",
     actual = "@platforms//os:windows",
+    deprecation = "Use @platforms//os:windows directly.",
 )
 
 alias(
     name = "darwin",
     actual = "@platforms//os:macos",
+    deprecation = "Use @platforms//os:macos directly.",
 )
 
 selects.config_setting_group(
