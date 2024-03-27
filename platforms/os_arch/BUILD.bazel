@@ -3,40 +3,40 @@ load("//build/bazel_common_rules/platforms:constants.bzl", "host_platforms")
 config_setting(
     name = "android_arm",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:arm",
-        "//build/bazel_common_rules/platforms/os:android",
+        "@platforms//cpu:arm",
+        "@platforms//os:android",
     ],
 )
 
 config_setting(
     name = "android_arm64",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:arm64",
-        "//build/bazel_common_rules/platforms/os:android",
+        "@platforms//cpu:arm64",
+        "@platforms//os:android",
     ],
 )
 
 config_setting(
     name = "android_riscv64",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:riscv64",
-        "//build/bazel_common_rules/platforms/os:android",
+        "@platforms//cpu:riscv64",
+        "@platforms//os:android",
     ],
 )
 
 config_setting(
     name = "android_x86",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:x86",
-        "//build/bazel_common_rules/platforms/os:android",
+        "@platforms//cpu:x86_32",
+        "@platforms//os:android",
     ],
 )
 
 config_setting(
     name = "android_x86_64",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:x86_64",
-        "//build/bazel_common_rules/platforms/os:android",
+        "@platforms//cpu:x86_64",
+        "@platforms//os:android",
     ],
 )
 
@@ -52,23 +52,23 @@ config_setting(
 config_setting(
     name = "linux_glibc_x86",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:x86",
-        "//build/bazel_common_rules/platforms/os:linux_glibc",
+        "@platforms//cpu:x86_32",
+        "@platforms//os:linux",
     ],
 )
 
 config_setting(
     name = "linux_glibc_x86_64",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:x86_64",
-        "//build/bazel_common_rules/platforms/os:linux_glibc",
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
     ],
 )
 
 config_setting(
     name = "linux_musl_arm",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:arm",
+        "@platforms//cpu:arm",
         "//build/bazel_common_rules/platforms/os:linux_musl",
     ],
 )
@@ -76,7 +76,7 @@ config_setting(
 config_setting(
     name = "linux_musl_arm64",
     constraint_values = [
-        "//build/bazel_common_rules/platforms/arch:arm64",
+        "@platforms//cpu:arm64",
         "//build/bazel_common_rules/platforms/os:linux_musl",
     ],
 )
