@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""**DEPRECATED.** Declares an executable with test mapping archive."""
+
 load("//build/bazel_common_rules/exec:embedded_exec.bzl", "embedded_exec")
 
+# TODO(b/330775243): Delete the whole package.
 def test_mappings_dist(
         name,
         dist_dir = None,
         **kwargs):
-    """Run this target to generate test mapping archive to the location given
+    """**DEPRECATED.** Declares an executable with test mapping archive.
+
+    Run this target to generate test mapping archive to the location given
     by `--dist_dir` command-line argument. If `--dist_dir` command-line argument
     is not specified, default to the `dist_dir` argument of this rule.
 
@@ -27,7 +32,7 @@ def test_mappings_dist(
     ```
     test_mappings(
         name = "my_test_mappings",
-        args = ["--dist_dir", "out/dist"],
+        dist_dir = "out/dist",
     )
     ```
 
@@ -44,8 +49,17 @@ def test_mappings_dist(
 
     Args:
         name: name of this target.
-        kwargs: Additional arguments to the internal rule, e.g. `visibility`.
+        dist_dir: distribution directory
+        **kwargs: Additional arguments to the internal rule, e.g. `visibility`.
+
+    Deprecated:
+        Use `//kernel/tests/test_mappings:test_mappings_zip` instead.
     """
+
+    # buildifier: disable=print
+    print("""\
+WARNING: //build/bazel_common_rules/test_mappings is deprecated.
+    Use //kernel/tests/test_mappings:test_mappings_zip instead.""")
 
     native.sh_binary(
         name = name + "_internal",
