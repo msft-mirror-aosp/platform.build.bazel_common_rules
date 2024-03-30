@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo "**DEPRECATED.** Use //kernel/tests/test_mappings:test_mappings_zip instead." >&2
+
 # Ensure hermeticity.
 PATH="$PWD/prebuilts/build-tools/path/linux-x86/:$PWD/prebuilts/build-tools/linux-x86/bin/"
 
