@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Impl of `embedded_exec`."""
+
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(":exec_aspect.bzl", "ExecAspectInfo", "exec_aspect")
+
+visibility([
+    "//build/bazel_common_rules/exec/...",
+    "//build/bazel_common_rules/dist/...",
+])
 
 def _impl(ctx):
     target = ctx.attr.actual

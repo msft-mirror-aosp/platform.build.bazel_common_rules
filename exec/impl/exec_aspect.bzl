@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Impl of `exec_aspect`."""
+
+visibility("//build/bazel_common_rules/exec/...")
+
 _attrs = ["args", "env", "data", "srcs", "deps"]
 
 ExecAspectInfo = provider(
@@ -19,7 +23,7 @@ ExecAspectInfo = provider(
     fields = {attr: attr + " of the target" for attr in _attrs},
 )
 
-def _aspect_impl(target, ctx):
+def _aspect_impl(_target, ctx):
     kwargs = {}
     for attr in _attrs:
         value = getattr(ctx.rule.attr, attr, None)

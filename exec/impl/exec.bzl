@@ -12,8 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//lib:shell.bzl", "shell")
+"""Impl of `exec`."""
+
 load(":exec_aspect.bzl", "ExecAspectInfo", "exec_aspect")
+
+visibility([
+    "//build/bazel_common_rules/exec/...",
+    "//build/kernel/kleaf/...",
+])
 
 _DEFAULT_HASHBANG = "/bin/bash -e"
 
