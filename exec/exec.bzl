@@ -1,4 +1,4 @@
-# Copyright (C) 2022 The Android Open Source Project
+# Copyright (C) 2024 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,101 +12,128 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//lib:shell.bzl", "shell")
-load(":exec_aspect.bzl", "ExecAspectInfo", "exec_aspect")
+"""Helps embedding `args` of an executable target."""
 
-_DEFAULT_HASHBANG = "/bin/bash -e"
+load(
+    "//build/bazel_common_rules/exec/impl:exec.bzl",
+    _exec = "exec",
+    _exec_rule = "exec_rule",
+    _exec_test = "exec_test",
+)
 
-def _impl(ctx):
-    out_file = ctx.actions.declare_file(ctx.label.name)
+visibility("public")
 
-    for target in ctx.attr.data:
-        if ExecAspectInfo not in target:
-            continue
-        if target[ExecAspectInfo].args:
-            fail("{}: {} must not have args. Use embedded_exec to wrap it.".format(ctx.label, target.label))
-        if target[ExecAspectInfo].env:
-            fail("{}: {} must not have env. Use embedded_exec to wrap it.".format(ctx.label, target.label))
+def exec(
+        name,
+        data = None,
+        hashbang = None,
+        script = None,
+        **kwargs):
+    """Runs a script when `bazel run` this target.
 
-    content = "#!{}\n".format(ctx.attr.hashbang)
-    content += ctx.attr.script
+    See [documentation] for the `args` attribute.
 
-    content = ctx.expand_location(content, ctx.attr.data)
-    ctx.actions.write(out_file, content, is_executable = True)
+    **NOTE**: Like [genrule](https://bazel.build/reference/be/general#genrule)s,
+    hermeticity is not enforced or guaranteed, especially if `script` accesses PATH.
+    See [`Genrule Environment`](https://bazel.build/reference/be/general#genrule-environment)
+    for details.
 
-    runfiles = ctx.runfiles(files = ctx.files.data + [out_file])
-    runfiles = runfiles.merge_all([target[DefaultInfo].default_runfiles for target in ctx.attr.data])
+    Args:
+        name: name of the target
+        data: A list of labels providing runfiles. Labels may be used in `script`.
 
-    return DefaultInfo(
-        files = depset([out_file]),
-        executable = out_file,
-        runfiles = runfiles,
+            Executables in `data` must not have the `args` and `env` attribute. Use
+            [`embedded_exec`](#embedded_exec) to wrap the depended target so its env and args
+            are preserved.
+        hashbang: hashbang of the script, default is `"/bin/bash -e"`.
+        script: The script.
+
+            Use `$(rootpath <label>)` to refer to the path of a target specified in `data`. See
+            [documentation](https://bazel.build/reference/be/make-variables#predefined_label_variables).
+
+            Use `$@` to refer to the args attribute of this target.
+
+            See `build/bazel_common_rules/exec/tests/BUILD` for examples.
+        **kwargs: Additional attributes to the internal rule, e.g.
+            [`visibility`](https://docs.bazel.build/versions/main/visibility.html).
+            See complete list
+            [here](https://docs.bazel.build/versions/main/be/common-definitions.html#common-attributes).
+
+    Deprecated:
+        Use `hermetic_exec` for stronger hermeticity.
+    """
+
+    # buildifier: disable=print
+    print("WARNING: {}: exec is deprecated. Use `hermetic_exec` instead.".format(
+        native.package_relative_label(name),
+    ))
+
+    kwargs.setdefault("deprecation", "Use hermetic_exec for stronger hermeticity")
+
+    _exec(
+        name = name,
+        data = data,
+        hashbang = hashbang,
+        script = script,
+        **kwargs
     )
 
-exec = rule(
-    implementation = _impl,
-    doc = """Run a script when `bazel run` this target.
+def exec_test(
+        name,
+        data = None,
+        hashbang = None,
+        script = None,
+        **kwargs):
+    """Runs a script when `bazel test` this target.
 
-See [documentation] for the `args` attribute.
+    See [documentation] for the `args` attribute.
 
-**NOTE**: Like [genrule](https://bazel.build/reference/be/general#genrule)s,
-hermeticity is not enforced or guaranteed, especially if `script` accesses PATH.
-See [`Genrule Environment`](https://bazel.build/reference/be/general#genrule-environment)
-for details.
-""",
-    attrs = {
-        "data": attr.label_list(aspects = [exec_aspect], allow_files = True, doc = """A list of labels providing runfiles. Labels may be used in `script`.
+    **NOTE**: Like [genrule](https://bazel.build/reference/be/general#genrule)s,
+    hermeticity is not enforced or guaranteed, especially if `script` accesses PATH.
+    See [`Genrule Environment`](https://bazel.build/reference/be/general#genrule-environment)
+    for details.
 
-Executables in `data` must not have the `args` and `env` attribute. Use
-[`embedded_exec`](#embedded_exec) to wrap the depended target so its env and args
-are preserved.
-"""),
-        "hashbang": attr.string(default = _DEFAULT_HASHBANG, doc = "Hashbang of the script."),
-        "script": attr.string(doc = """The script.
+    Args:
+        name: name of the target
+        data: A list of labels providing runfiles. Labels may be used in `script`.
 
-Use `$(rootpath <label>)` to refer to the path of a target specified in `data`. See
-[documentation](https://bazel.build/reference/be/make-variables#predefined_label_variables).
+            Executables in `data` must not have the `args` and `env` attribute. Use
+            [`embedded_exec`](#embedded_exec) to wrap the depended target so its env and args
+            are preserved.
+        hashbang: hashbang of the script, default is `"/bin/bash -e"`.
+        script: The script.
 
-Use `$@` to refer to the args attribute of this target.
+            Use `$(rootpath <label>)` to refer to the path of a target specified in `data`. See
+            [documentation](https://bazel.build/reference/be/make-variables#predefined_label_variables).
 
-See `build/bazel_common_rules/exec/tests/BUILD` for examples.
-"""),
-    },
-    executable = True,
-)
+            Use `$@` to refer to the args attribute of this target.
 
-exec_test = rule(
-    implementation = _impl,
-    doc = """Run a test script when `bazel test` this target.
+            See `build/bazel_common_rules/exec/tests/BUILD` for examples.
+        **kwargs: Additional attributes to the internal rule, e.g.
+            [`visibility`](https://docs.bazel.build/versions/main/visibility.html).
+            See complete list
+            [here](https://docs.bazel.build/versions/main/be/common-definitions.html#common-attributes).
 
-See [documentation] for the `args` attribute.
+    Deprecated:
+        Use `hermetic_exec` for stronger hermeticity.
+    """
 
-**NOTE**: Like [genrule](https://bazel.build/reference/be/general#genrule)s,
-hermeticity is not enforced or guaranteed, especially if `script` accesses PATH.
-See [`Genrule Environment`](https://bazel.build/reference/be/general#genrule-environment)
-for details.
-""",
-    attrs = {
-        "data": attr.label_list(aspects = [exec_aspect], allow_files = True, doc = """A list of labels providing runfiles. Labels may be used in `script`.
+    # buildifier: disable=print
+    print("WARNING: {}: exec_test is deprecated. Use `hermetic_exec_test` instead.".format(
+        native.package_relative_label(name),
+    ))
 
-Executables in `data` must not have the `args` and `env` attribute. Use
-[`embedded_exec`](#embedded_exec) to wrap the depended target so its env and args
-are preserved.
-"""),
-        "hashbang": attr.string(default = _DEFAULT_HASHBANG, doc = "Hashbang of the script."),
-        "script": attr.string(doc = """The script.
+    kwargs.setdefault("deprecation", "Use hermetic_exec_test for stronger hermeticity")
 
-Use `$(rootpath <label>)` to refer to the path of a target specified in `data`. See
-[documentation](https://bazel.build/reference/be/make-variables#predefined_label_variables).
+    _exec_test(
+        name = name,
+        data = data,
+        hashbang = hashbang,
+        script = script,
+        **kwargs
+    )
 
-Use `$@` to refer to the args attribute of this target.
-
-See `build/bazel_common_rules/exec/tests/BUILD` for examples.
-"""),
-    },
-    test = True,
-)
-
+# buildifier: disable=unnamed-macro
 def exec_rule(
         cfg = None,
         attrs = None):
@@ -128,19 +155,10 @@ def exec_rule(
         a rule
     """
 
-    fixed_attrs = {
-        "data": attr.label_list(aspects = [exec_aspect], allow_files = True),
-        "hashbang": attr.string(default = _DEFAULT_HASHBANG),
-        "script": attr.string(),
-    }
+    # buildifier: disable=print
+    print("WARNING: exec_rule is deprecated.")
 
-    if attrs == None:
-        attrs = {}
-    attrs = attrs | fixed_attrs
-
-    return rule(
-        implementation = _impl,
-        attrs = attrs,
+    _exec_rule(
         cfg = cfg,
-        executable = True,
+        attrs = attrs,
     )
