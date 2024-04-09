@@ -1,8 +1,9 @@
-# Rule to support Bazel in copying its output files to the dist dir outside of
-# the standard Bazel output user root.
+"""Rule to support Bazel in copying its output files to the dist dir outside of
+the standard Bazel output user root.
+"""
 
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-load("//build/bazel_common_rules/exec:embedded_exec.bzl", "embedded_exec")
+load("//build/bazel_common_rules/exec/impl:embedded_exec.bzl", "embedded_exec")
 
 def _label_list_to_manifest(lst):
     """Convert the outputs of a label list to manifest content."""
@@ -140,7 +141,7 @@ def copy_to_dist_dir(
           on reverse dependencies.
 
           See `dist.py` for allowed values and the default value.
-        kwargs: Additional attributes to the internal rule, e.g.
+        **kwargs: Additional attributes to the internal rule, e.g.
           [`visibility`](https://docs.bazel.build/versions/main/visibility.html).
 
           These additional attributes are only passed to the underlying embedded_exec rule.

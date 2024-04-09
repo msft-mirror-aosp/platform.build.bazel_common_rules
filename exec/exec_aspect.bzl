@@ -1,4 +1,4 @@
-# Copyright (C) 2022 The Android Open Source Project
+# Copyright (C) 2024 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-_attrs = ["args", "env", "data", "srcs", "deps"]
+"""Helps embedding `args` of an executable target.
 
-ExecAspectInfo = provider(
-    doc = "See [`exec_aspect`](#exec_aspect).",
-    fields = {attr: attr + " of the target" for attr in _attrs},
+**DEPRECTED**. This is an implementation detail and should not be relied upon.
+"""
+
+load(
+    "//build/bazel_common_rules/exec/impl:exec_aspect.bzl",
+    _ExecAspectInfo = "ExecAspectInfo",
+    _exec_aspect = "exec_aspect",
 )
 
-def _aspect_impl(target, ctx):
-    kwargs = {}
-    for attr in _attrs:
-        value = getattr(ctx.rule.attr, attr, None)
-        kwargs[attr] = value
-    return ExecAspectInfo(**kwargs)
+# TODO(b/329305827): make this private
+visibility("public")
 
-exec_aspect = aspect(
-    implementation = _aspect_impl,
-    doc = "Make arguments available for targets depending on executables.",
-    attr_aspects = _attrs,
-)
+ExecAspectInfo = _ExecAspectInfo
+exec_aspect = _exec_aspect
