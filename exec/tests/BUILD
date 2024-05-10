@@ -13,8 +13,8 @@
 # limitations under the License.
 
 # BUILD
-load("//build/bazel_common_rules/exec:embedded_exec.bzl", "embedded_exec")
-load("//build/bazel_common_rules/exec:exec.bzl", "exec")
+load("//build/bazel_common_rules/exec/impl:embedded_exec.bzl", "embedded_exec")
+load("//build/bazel_common_rules/exec/impl:exec.bzl", "exec")
 
 exec(
     name = "script_a",

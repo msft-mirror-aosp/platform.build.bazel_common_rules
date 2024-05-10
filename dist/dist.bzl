@@ -1,8 +1,9 @@
-# Rule to support Bazel in copying its output files to the dist dir outside of
-# the standard Bazel output user root.
+"""Rule to support Bazel in copying its output files to the dist dir outside of
+the standard Bazel output user root.
+"""
 
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-load("//build/bazel_common_rules/exec:embedded_exec.bzl", "embedded_exec")
+load("//build/bazel_common_rules/exec/impl:embedded_exec.bzl", "embedded_exec")
 
 def _label_list_to_manifest(lst):
     """Convert the outputs of a label list to manifest content."""
@@ -69,6 +70,7 @@ def copy_to_dist_dir(
         allow_duplicate_filenames = None,
         mode_overrides = None,
         log = None,
+        testonly = False,
         **kwargs):
     """A dist rule to copy files out of Bazel's output directory into a custom location.
 
@@ -134,8 +136,12 @@ def copy_to_dist_dir(
         log: If specified, `--log <log>` is provided to the script by default. This sets the
           default log level of the script.
 
+        testonly: If enabled, testonly will also be set on the internal targets
+          for Bazel analysis to succeed due to the nature of testonly enforcement
+          on reverse dependencies.
+
           See `dist.py` for allowed values and the default value.
-        kwargs: Additional attributes to the internal rule, e.g.
+        **kwargs: Additional attributes to the internal rule, e.g.
           [`visibility`](https://docs.bazel.build/versions/main/visibility.html).
 
           These additional attributes are only passed to the underlying embedded_exec rule.
@@ -168,6 +174,7 @@ def copy_to_dist_dir(
         name = name + "_dist_manifest",
         data = data,
         archives = archives,
+        testonly = testonly,
     )
 
     copy_file(
@@ -186,11 +193,13 @@ def copy_to_dist_dir(
         python_version = "PY3",
         visibility = ["//visibility:public"],
         data = [name + "_dist_manifest"],
+        testonly = testonly,
         args = default_args,
     )
 
     embedded_exec(
         name = name,
         actual = name + "_internal",
+        testonly = testonly,
         **kwargs
     )
