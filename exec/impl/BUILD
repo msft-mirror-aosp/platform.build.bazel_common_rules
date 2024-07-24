@@ -12,6 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-exports_files([
-    "test_mappings.sh",
-])
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+bzl_library(
+    name = "exec_aspect",
+    srcs = ["exec_aspect.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "embedded_exec",
+    srcs = ["embedded_exec.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":exec_aspect",
+        "@bazel_skylib//lib:shell",
+    ],
+)
+
+bzl_library(
+    name = "exec",
+    srcs = ["exec.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":exec_aspect",
+        "@bazel_skylib//lib:shell",
+    ],
+)

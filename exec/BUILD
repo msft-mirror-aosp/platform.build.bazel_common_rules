@@ -1,4 +1,4 @@
-# Copyright (C) 2022 The Android Open Source Project
+# Copyright (C) 2024 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@ bzl_library(
     name = "exec_aspect",
     srcs = ["exec_aspect.bzl"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//build/bazel_common_rules/exec/impl:exec_aspect",
+    ],
 )
 
 bzl_library(
@@ -26,6 +29,7 @@ bzl_library(
     visibility = ["//visibility:public"],
     deps = [
         ":exec_aspect",
+        "//build/bazel_common_rules/exec/impl:embedded_exec",
         "@bazel_skylib//lib:shell",
     ],
 )
@@ -36,6 +40,7 @@ bzl_library(
     visibility = ["//visibility:public"],
     deps = [
         ":exec_aspect",
+        "//build/bazel_common_rules/exec/impl:exec",
         "@bazel_skylib//lib:shell",
     ],
 )
