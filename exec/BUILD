@@ -15,32 +15,12 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 bzl_library(
-    name = "exec_aspect",
-    srcs = ["exec_aspect.bzl"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//build/bazel_common_rules/exec/impl:exec_aspect",
-    ],
-)
-
-bzl_library(
     name = "embedded_exec",
     srcs = ["embedded_exec.bzl"],
     visibility = ["//visibility:public"],
     deps = [
         ":exec_aspect",
         "//build/bazel_common_rules/exec/impl:embedded_exec",
-        "@bazel_skylib//lib:shell",
-    ],
-)
-
-bzl_library(
-    name = "exec",
-    srcs = ["exec.bzl"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":exec_aspect",
-        "//build/bazel_common_rules/exec/impl:exec",
         "@bazel_skylib//lib:shell",
     ],
 )

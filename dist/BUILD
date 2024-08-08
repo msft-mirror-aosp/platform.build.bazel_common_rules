@@ -1,5 +1,5 @@
-load(":dist.bzl", "copy_to_dist_dir")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load(":dist.bzl", "copy_to_dist_dir")
 
 exports_files(["dist.py"])
 
@@ -8,7 +8,7 @@ bzl_library(
     srcs = ["dist.bzl"],
     visibility = ["//visibility:public"],
     deps = [
-        "//build/bazel_common_rules/exec:embedded_exec",
+        "//build/bazel_common_rules/exec/impl:embedded_exec",
         "@bazel_skylib//rules:copy_file",
     ],
 )
