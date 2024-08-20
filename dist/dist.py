@@ -181,6 +181,8 @@ def main():
         help="Path prefix to apply within dist_dir for extracted archives. " +
              "Supported archives: tar.")
     parser.add_argument("--log", help="Log level (debug, info, warning, error)", default="debug")
+    parser.add_argument("-q", "--quiet", action="store_const", default=False,
+                        help="Same as --log=error", const="error", dest="log")
     parser.add_argument(
         "--wipe_dist_dir",
         action="store_true",
