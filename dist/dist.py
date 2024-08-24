@@ -162,7 +162,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Dist Bazel output files into a custom directory.")
     parser.add_argument(
-        "--dist_dir", required=True, help="""path to the dist dir.
+        "--dist_dir", "--destdir", required=True, help="""path to the dist dir.
             If relative, it is interpreted as relative to Bazel workspace root
             set by the BUILD_WORKSPACE_DIRECTORY environment variable, or
             PWD if BUILD_WORKSPACE_DIRECTORY is not set.""")
@@ -181,6 +181,8 @@ def main():
         help="Path prefix to apply within dist_dir for extracted archives. " +
              "Supported archives: tar.")
     parser.add_argument("--log", help="Log level (debug, info, warning, error)", default="debug")
+    parser.add_argument("-q", "--quiet", action="store_const", default=False,
+                        help="Same as --log=error", const="error", dest="log")
     parser.add_argument(
         "--wipe_dist_dir",
         action="store_true",
