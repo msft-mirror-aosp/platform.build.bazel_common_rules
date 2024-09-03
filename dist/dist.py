@@ -43,6 +43,9 @@ import sys
 import tarfile
 
 
+_CMDLINE_FLAGS_SENTINEL = "CMDLINE_FLAGS_SENTINEL"
+
+
 def copy_with_modes(src, dst, mode_overrides):
     mode_override = None
     for (pattern, mode) in mode_overrides:
@@ -157,8 +160,7 @@ def config_logging(log_level_str):
         sys.exit(1)
     logging.basicConfig(level=level, format="[dist] %(levelname)s: %(message)s")
 
-
-def main():
+def _get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Dist Bazel output files into a custom directory.")
     parser.add_argument(
@@ -201,8 +203,12 @@ def main():
         default=[],
         help='glob pattern and mode to set on files matching pattern (e.g. --mode_override "*.sh" "755")'
     )
+    return parser
 
-    args = parser.parse_args(sys.argv[1:])
+def main():
+    args = sys.argv[1:]
+    args.remove(_CMDLINE_FLAGS_SENTINEL)
+    args = _get_parser().parse_args(args)
 
     mode_overrides = []
     for (pattern, mode) in args.mode_override:
