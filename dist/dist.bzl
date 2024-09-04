@@ -13,6 +13,10 @@ def _label_list_to_manifest(lst):
     return all_dist_files, "\n".join([dist_file.short_path for dist_file in all_dist_files])
 
 def _generate_dist_manifest_impl(ctx):
+    if ctx.attr.archives:
+        # buildifier: disable=print
+        print("archives is deprecated. Please file a bug if you are using it.")
+
     # Create a manifest of dist files to differentiate them from other runfiles.
     dist_manifest = ctx.actions.declare_file(ctx.attr.name + "_dist_manifest.txt")
     all_dist_files, dist_manifest_content = _label_list_to_manifest(ctx.attr.data)
@@ -85,8 +89,13 @@ def copy_to_dist_dir(
     Args:
         name: name of this rule
         data: A list of labels, whose outputs are copied to `--dist_dir`.
-        archives: A list of labels, whose outputs are treated as tarballs and
+        archives: **DEPRECATED**. A list of labels, whose outputs are treated as tarballs and
           extracted to `--dist_dir`.
+
+          Deprecated:
+
+            This is deprecated due to inactive usage. If you are using it, please file
+            a bug.
         flat: If true, `--flat` is provided to the script by default. Flatten the distribution
           directory.
         strip_components: If specified, `--strip_components <prefix>` is provided to the script. Strip
@@ -94,8 +103,13 @@ def copy_to_dist_dir(
           (if specified).
         prefix: If specified, `--prefix <prefix>` is provided to the script by default. Path prefix
           to apply within dist_dir for copied files.
-        archive_prefix: If specified, `--archive_prefix <prefix>` is provided to the script by
+        archive_prefix: **DEPRECATED**. If specified, `--archive_prefix <prefix>` is provided to the script by
           default. Path prefix to apply within dist_dir for extracted archives.
+
+          Deprecated:
+
+            This is deprecated due to inactive usage. If you are using it, please file
+            a bug.
         dist_dir: If specified, `--dist_dir <dist_dir>` is provided to the script by default.
 
           In particular, if this is a relative path, it is interpreted as a relative path
@@ -169,6 +183,9 @@ def copy_to_dist_dir(
             default_args += ["--mode_override", pattern, str(mode)]
     if log != None:
         default_args += ["--log", log]
+
+    # Separate flags from BUILD with flags from command line
+    default_args.append("CMDLINE_FLAGS_SENTINEL")
 
     _generate_dist_manifest(
         name = name + "_dist_manifest",
