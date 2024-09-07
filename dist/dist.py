@@ -41,6 +41,31 @@ import pathlib
 import shutil
 import sys
 import tarfile
+import textwrap
+
+
+_CMDLINE_FLAGS_SENTINEL = "CMDLINE_FLAGS_SENTINEL"
+
+# Arguments that should not be specified in the command line, but only
+# in BUILD files.
+_DEPRECATED_CMDLINE_OPTIONS = {
+    "--dist_dir": "Use --destdir instead.",
+    "--log": "Use -q instead.",
+    "--archive_prefix": "",
+    "--flat": "Specify it in the BUILD file (e.g. copy_to_dist_dir(flat=True))",
+    "--strip_components": "Specify it in the BUILD file "
+                          "(e.g. copy_to_dist_dir(strip_components=1))",
+    "--prefix": "Specify it in the BUILD file "
+                "(e.g. copy_to_dist_dir(prefix='prefix'))",
+    "--wipe_dist_dir": "Specify it in the BUILD file "
+                       "(e.g. copy_to_dist_dir(wipe_dist_dir=True))",
+    "--allow_duplicate_filenames":
+        "Specify it in the BUILD file "
+        "(e.g. copy_to_dist_dir(allow_duplicate_filenames=True))",
+    "--mode_override":
+        "Specify it in the BUILD file "
+        "(e.g. copy_to_dist_dir(mode_overrides=[('*.sh', '755')]))",
+}
 
 
 def copy_with_modes(src, dst, mode_overrides):
@@ -158,51 +183,113 @@ def config_logging(log_level_str):
     logging.basicConfig(level=level, format="[dist] %(levelname)s: %(message)s")
 
 
-def main():
+class CheckDeprecationAction(argparse.Action):
+    """Checks if a deprecated option is used, then do nothing."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        if option_string in _DEPRECATED_CMDLINE_OPTIONS:
+            logging.warning("%s is deprecated! %s", option_string,
+                            _DEPRECATED_CMDLINE_OPTIONS[option_string])
+
+
+class StoreAndCheckDeprecationAction(CheckDeprecationAction):
+    """Sotres the value, and checks if a deprecated option is used."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        super().__call__(parser, namespace, values, option_string)
+        setattr(namespace, self.dest, values)
+
+
+class StoreTrueAndCheckDeprecationAction(CheckDeprecationAction):
+    """Sotres true, and checks if a deprecated option is used."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        super().__call__(parser, namespace, values, option_string)
+        setattr(namespace, self.dest, True)
+
+
+class AppendAndCheckDeprecationAction(CheckDeprecationAction):
+    """Appends the value, and checks if a deprecated option is used."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        super().__call__(parser, namespace, values, option_string)
+        if not values:
+            return
+        metavar_len = len(self.metavar)if self.metavar else 1
+        value_groups = [values[i:i + metavar_len]
+                        for i in range(0, len(values), metavar_len)]
+        setattr(namespace, self.dest,
+                getattr(namespace, self.dest, []) + value_groups)
+
+
+def _get_parser(cmdline=False) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Dist Bazel output files into a custom directory.")
+        description="Dist Bazel output files into a custom directory.",
+        formatter_class=argparse.RawTextHelpFormatter)
+    deprecated = parser.add_argument_group(
+        "Deprecated command line options",
+        description=textwrap.dedent("""\
+            List of command line options that are deprecated.
+            Most of them should be specified in the BUILD file instead.
+        """))
     parser.add_argument(
-        "--dist_dir", "--destdir", required=True, help="""path to the dist dir.
+        "--destdir", "--dist_dir", required=not cmdline, dest="dist_dir",
+        help=textwrap.dedent("""\
+            path to the dist dir.
             If relative, it is interpreted as relative to Bazel workspace root
             set by the BUILD_WORKSPACE_DIRECTORY environment variable, or
-            PWD if BUILD_WORKSPACE_DIRECTORY is not set.""")
-    parser.add_argument(
+            PWD if BUILD_WORKSPACE_DIRECTORY is not set.
+
+            Note: --dist_dir is deprecated; use --destdir instead."""),
+        action=StoreAndCheckDeprecationAction if cmdline else "store")
+    deprecated.add_argument(
         "--flat",
-        action="store_true",
+        action=StoreTrueAndCheckDeprecationAction if cmdline else "store_true",
         help="ignore subdirectories in the manifest")
-    parser.add_argument(
+    deprecated.add_argument(
         "--strip_components", type=int, default=0,
-        help="number of leading components to strip from paths before applying --prefix")
-    parser.add_argument(
+        help="number of leading components to strip from paths before applying --prefix",
+        action=StoreAndCheckDeprecationAction if cmdline else "store")
+    deprecated.add_argument(
         "--prefix", default="",
-        help="path prefix to apply within dist_dir for copied files")
-    parser.add_argument(
+        help="path prefix to apply within dist_dir for copied files",
+        action=StoreAndCheckDeprecationAction if cmdline else "store")
+    deprecated.add_argument(
         "--archive_prefix", default="",
         help="Path prefix to apply within dist_dir for extracted archives. " +
-             "Supported archives: tar.")
-    parser.add_argument("--log", help="Log level (debug, info, warning, error)", default="debug")
+             "Supported archives: tar.",
+        action=StoreAndCheckDeprecationAction if cmdline else "store")
+    deprecated.add_argument("--log", help="Log level (debug, info, warning, error)",
+        default="debug",
+        action=StoreAndCheckDeprecationAction if cmdline else "store")
     parser.add_argument("-q", "--quiet", action="store_const", default=False,
                         help="Same as --log=error", const="error", dest="log")
-    parser.add_argument(
+    deprecated.add_argument(
         "--wipe_dist_dir",
-        action="store_true",
-        help="remove existing dist_dir prior to running"
+        action=StoreTrueAndCheckDeprecationAction if cmdline else "store_true",
+        help="remove existing dist_dir prior to running",
     )
-    parser.add_argument(
+    deprecated.add_argument(
         "--allow_duplicate_filenames",
-        action="store_true",
+        action=StoreTrueAndCheckDeprecationAction if cmdline else "store_true",
         help="allow multiple files with the same name to be copied to dist_dir (overwriting)"
     )
-    parser.add_argument(
+    deprecated.add_argument(
         "--mode_override",
         metavar=("PATTERN", "MODE"),
-        action="append",
+        action=AppendAndCheckDeprecationAction if cmdline else "append",
         nargs=2,
         default=[],
         help='glob pattern and mode to set on files matching pattern (e.g. --mode_override "*.sh" "755")'
     )
+    return parser
 
-    args = parser.parse_args(sys.argv[1:])
+def main():
+    args = sys.argv[1:]
+    args.remove(_CMDLINE_FLAGS_SENTINEL)
+    args = _get_parser().parse_args(args)
+
+    config_logging(args.log)
+
+    # Warn about arguments that should not be set in command line.
+    _get_parser(cmdline=True).parse_args(
+        sys.argv[sys.argv.index(_CMDLINE_FLAGS_SENTINEL) + 1:])
 
     mode_overrides = []
     for (pattern, mode) in args.mode_override:
@@ -211,8 +298,6 @@ def main():
         except ValueError:
             logging.error("invalid octal permissions: %s", mode)
             sys.exit(1)
-
-    config_logging(args.log)
 
     if not os.path.isabs(args.dist_dir):
         # BUILD_WORKSPACE_DIRECTORY is the root of the Bazel workspace containing
