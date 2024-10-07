@@ -184,6 +184,9 @@ def copy_to_dist_dir(
     if log != None:
         default_args += ["--log", log]
 
+    # Separate flags from BUILD with flags from command line
+    default_args.append("CMDLINE_FLAGS_SENTINEL")
+
     _generate_dist_manifest(
         name = name + "_dist_manifest",
         data = data,
