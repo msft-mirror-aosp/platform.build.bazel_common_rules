@@ -224,7 +224,9 @@ def copy_to_dist_dir(
         args = default_args,
     )
 
-    kwargs.setdefault("deprecation", """copy_to_dist_dir() is deprecated. Use pkg_install() instead.
+    # buildifier: disable=print
+    print("""
+WARNING: copy_to_dist_dir() is deprecated. Use pkg_install() instead.
 
 Suggested edit:
 
