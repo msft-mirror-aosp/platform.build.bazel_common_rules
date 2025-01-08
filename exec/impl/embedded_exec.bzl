@@ -24,8 +24,8 @@ visibility([
 
 def _impl(ctx):
     # buildifier: disable=print
-    print(("\nWARNING: {}: embedded_exec is deprecated. Consider writing a custom rule with " +
-           "arguments specified at the wrapper rule instead.").format(ctx.label))
+    print(("\nWARNING: {}: embedded_exec is deprecated. Consider run_binary from skylib, or " +
+           "writing a custom rule with arguments specified at the wrapper rule instead.").format(ctx.label))
 
     target = ctx.attr.actual
     files_to_run = target[DefaultInfo].files_to_run
