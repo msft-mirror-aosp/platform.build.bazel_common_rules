@@ -261,7 +261,7 @@ def _get_parser(cmdline=False) -> argparse.ArgumentParser:
     parser.add_argument("-q", "--quiet", action="store_const", default=False,
                         help="Same as --log=error", const="error", dest="log")
     deprecated.add_argument(
-        "--wipe_dist_dir",
+        "--wipe_dist_dir", "--wipe_destdir",
         action=StoreTrueAndCheckDeprecationAction if cmdline else "store_true",
         help="remove existing dist_dir prior to running",
     )
