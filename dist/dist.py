@@ -182,7 +182,7 @@ def main():
              "Supported archives: tar.")
     parser.add_argument("--log", help="Log level (debug, info, warning, error)", default="debug")
     parser.add_argument(
-        "--wipe_dist_dir",
+        "--wipe_dist_dir", "--wipe_destdir",
         action="store_true",
         help="remove existing dist_dir prior to running"
     )
